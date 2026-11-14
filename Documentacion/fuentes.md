@@ -25,7 +25,7 @@ https://www.nasa.gov/hrp/hazard-hostile-closed-environments/
 
 Watch videos:
 Hazard 1: Space radiation: https://www.youtube.com/watch?v=3jRxgvwhGC0&list=PLiuUQ9asub3RRA-BMh7wLsU7V6gUUSRwH
-Hazard 2: Isolation: https: //www.youtube.com/watch?v=FPinASEKA_I&list=PLiuUQ9asub3RRA-BMh7wLsU7V6gUUSRwH&index=2
+Hazard 2: Isolation: https://www.youtube.com/watch?v=FPinASEKA_I&list=PLiuUQ9asub3RRA-BMh7wLsU7V6gUUSRwH&index=2
 Hazard 3: Distance from Earth: https://www.youtube.com/watch?v=0_pbs8dG1oM&list=PLiuUQ9asub3RRA-BMh7wLsU7V6gUUSRwH&index=3
 Hazard 4: Gravity fields: https://www.youtube.com/watch?v=f3-96ZbY5NA&list=PLiuUQ9asub3RRA-BMh7wLsU7V6gUUSRwH&index=4
 Hazard 5: Hostile / Closed Environments: https://www.youtube.com/watch?v=LgGt03MjHfA&list=PLiuUQ9asub3RRA-BMh7wLsU7V6gUUSRwH&index=5

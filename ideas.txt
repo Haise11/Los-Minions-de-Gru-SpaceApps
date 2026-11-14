@@ -1,13 +1,15 @@
 ACÁ VAN TODAS LAS IDEAS A IMPLEMENTAR EN NUESTRO PROGRAMA:
 
--Hacer un .jason por cada astronauta
+[x] Hacer un .json por cada astronauta (data/astronauts/<id>.json)
+[x] Hacer un .json por cada misión (data/missions/<id>.json)
+[x] Hacer un .json para valores por defecto que debería tener cada astronauta (data/defaults.json)
+[x] Hacer un .md para explicar las bases del programa (Documentacion/arquitectura.md y Documentacion/functions.md)
+[x] Hacer un .md para explicar cómo queremos que sea la interfaz de nuestro software (Documentacion/frontend_ui.md + Imagenes de referencia)
 
--Hacer un .jason por cada misión
-
--Hacer .jason para valores por defecto que debería tener cada astronauta
-
--Hacer un .md para explicar las bases del programa (C para backend, CSS, html y JavaScript para front end)
-
--Hacer un .md para explicar cómo queremos que sea la interfaz de nuestro software
-
--
+IDEAS ADICIONALES INTEGRADAS EN LA ESPECIFICACIÓN:
+- Puntaje numérico de salud (health_score 0-100%) por astronauta y Promedio General de Salud de la misión (MissionHealthSummary) para el botón "PROMEDIO DE SALUD".
+- Indicador operativo EVA / Pilotaje Manual (GO / RESTRICTED / NO-GO) en cada tarjeta de astronauta.
+- Opción "CARGAR ARCHIVO" para importar perfiles/historiales .json además del formulario de check-in rápido.
+- Mini-test interactivo de reflejos (3 toques en JS) dentro del check-in para medir cognitivo_ms reales sin escribirlos a mano.
+- Cobertura completa de todas las variables de NASA HRP (incluyendo cohesión de equipo, hemostasia venosa por deshidratación, glucemia y cargas dinámicas GRAV_DYNAMIC).
+- Exportación de bitácora clínica offline (.json) para sincronización diferida cuando hay alta latencia (Marte).

@@ -1,28 +1,51 @@
-# 05 - Mapeo de Datos NASA HRP y Parámetros Médicos
+# 05 - Mapeo de Datos NASA HRP, Umbrales y Escenarios de Prueba
 
 ## 1. Propósito
-Traducir los recursos de investigación recopilados en `fuentes.md` en **variables medibles, umbrales de referencia y contramedidas concretas** que alimenten tanto al motor de evaluación en C como a los datos de prueba (`data/sample_telemetry.csv`).
+Traducir los recursos científicos recopilados en [fuentes.md](./fuentes.md) a **variables concretas del backend en C**, umbrales unificados y escenarios de datos semilla/simulación que alimentan tanto a `src/health_engine.c` como a los archivos iniciales en `data/`.
 
 ---
 
-## 2. Matriz de Variables y Referencias NASA / CSA
+## 2. Matriz Unificada de Variables, Umbrales y Contramedidas
 
-| Categoría HRP | Variable en el Software | Fuente de Referencia (`fuentes.md`) | Rango Nominal / Umbral de Alerta | Contramedida Sugerida por el Sistema |
-| :--- | :--- | :--- | :--- | :--- |
-| **Entorno Cerrado / Hipoxia** | `spo2_percent` (%) | Risk of Hypoxia / Tempus Pro | Nominal: 95–100%<br>Alerta: < 93% | Verificar presión parcial de O2, revisar sistema ECLSS y administrar O2 suplementario. |
-| **Cardiovascular** | `heart_rate_bpm` (lpm) | Risk of Cardiovascular Adaptations / Tempus Pro | Nominal: 55–90 lpm (reposo)<br>Alerta: > 105 o < 45 lpm | Evaluar hidratación, carga de ejercicio y realizar ECG de control. |
-| **Cardiovascular** | `systolic_bp` / `diastolic_bp` | Tempus Pro / Standard Measures | Nominal: ~120/80 mmHg<br>Alerta: > 140/90 o < 90/60 | Monitoreo de redistribución de fluidos; evaluar uso de *Thigh Cuff* si aplica. |
-| **Radiación Espacial** | `radiation_dose_msv` (mSv/día) | CSA Radi-N2 / CANS / Risk of Radiation | Nominal: < 1.0 mSv/día<br>Alerta: > 2.0 mSv/día (pico solar) | Refugiarse en zona blindada de la nave; registrar exposición acumulada. |
-| **Aislamiento y Sueño** | `sleep_hours` (hs/día) | ARCHeR / Risk from Inadequate Sleep | Nominal: 7–8.5 hs<br>Alerta: < 6 hs sostenido | Ajustar ciclo de iluminación circadiana; reducir carga cognitiva no crítica. |
-| **Salud Conductual** | `stress_level` / `mood_score` | ARCHeR / Behavioral Performance | Estrés > 7 o Ánimo < 4 | Activar protocolo de bienestar, pausas activas o sesión de soporte autónomo. |
-| **Microgravedad (Óseo/Muscular)** | `exercise_minutes` (min/día) | Zero-T2 / Bone Changes / Fitness | Meta: >= 90 min/día<br>Alerta: < 45 min/día | Programar rutina de ejercicio resistivo (ARED) para prevenir pérdida ósea y muscular. |
-| **Neuro-ocular (SANS)** | `ocular_pressure_flag` (0/1) | Risk of SANS / Brain Fluid Pressure | Nominal: 0 (sin síntomas)<br>Alerta: 1 (visión borrosa/cefalea) | Realizar examen de fondo de ojo/ultrasonido ocular guiado y reportar en bitácora. |
+Los nombres de variables corresponden exactamente a los campos de `DailyHealthSample`, `AstronautBaseline`, `Astronaut` y `CabinEnv` en [functions.md](./functions.md).
+
+| Peligro HRP (`NasaHazard`) | Sistema (`BodySystem`) | Variables en C | Fuente NASA / CSA (`fuentes.md`) | Rango Nominal / Umbral de Alerta | Contramedida Sugerida |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Radiación Espacial** (`HAZARD_RADIATION`) | `SYS_RADIATION` | `dosis_dia_msv`, `env.tasa_rad_msv_h`, `env.evento_spe_activo`, `radiacion_previa_msv + radiacion_mision_msv` | *CSA Radi-N2 / CANS / Risk of Radiation* | Nominal: `< 1.0 mSv/día` (`0.5` base)<br>Caution: acumulado `>= 480 mSv`<br>Critical: `evento_spe_activo == 1`, `tasa >= 0.5 mSv/h`, `dosis_dia_msv > 2.0`, o acumulado `>= 600 mSv` | Refugiarse de inmediato en zona blindada (*storm shelter*), suspender EVA, registrar dosimetría continua y replanificar rotaciones. |
+| **Campos Gravitatorios — SANS** (`HAZARD_GRAVITY`) | `SYS_NEURO_OCULAR` | `vision_actual`, `dolor_cabeza`, `pa_sis`, `sintomas_flags` (`SYM_THIGH_CUFF_ACTIVE`, `SYM_B_COMPLEX_TAKEN`) | *Risk of SANS / Brain Fluid Pressure / Thigh Cuff / B-Complex* | Nominal: `vision_actual >= vision_base - 0.10`<br>Caution: `vision <= base - 0.15` Y (`dolor_cabeza >= 4` o `pa_sis >= base + 20`)<br>Critical: `vision <= base - 0.25` | Iniciar protocolo **Thigh Cuff**, verificar suplementación **B-Complex** y ejecutar fondo de ojo / ecografía de nervio óptico (*Tempus Pro*). |
+| **Entornos Cerrados — Hipoxia** (`HAZARD_CLOSED_ENV`) | `SYS_RESPIRATORY_EVA` | `spo2`, `env.po2_kpa` | *Risk of Hypoxia / Tempus Pro* | Nominal: `spo2` 95–100%, `po2` ~21.3 kPa<br>Caution: `spo2 < 94%` o `po2 < 18.0 kPa`<br>Critical: `spo2 < 90%` o `po2 < 15.0 kPa` | Administrar O2 suplementario, revisar sistema ECLSS y reducir carga física. |
+| **Entornos Cerrados — Hipercapnia** (`HAZARD_CLOSED_ENV`) | `SYS_RESPIRATORY_EVA` | `env.pco2_kpa`, `dolor_cabeza`, `cognitivo_ms` | *Hostile Closed Environments / ECLSS* | Nominal: `pco2 < 0.4–0.5 kPa`<br>Caution: `pco2 > 0.5 kPa` Y (`dolor_cabeza >= 4` o `cognitivo_ms > base * 1.20`)<br>Critical: `pco2 > 0.8 kPa` | Inspeccionar depurador de CO2 (*scrubber*) y ventilar módulo antes de atribuir síntomas a fatiga. |
+| **Entornos Cerrados — DCS (EVA)** (`HAZARD_CLOSED_ENV`) | `SYS_RESPIRATORY_EVA` | `tuvo_eva`, `pre_resp_o2_min`, `sintomas_flags` (`SYM_EVA_JOINT_PAIN`) | *Risk of Decompression Sickness / EVA* | Nominal: `pre_resp >= 120 min`, sin dolor articular<br>Critical: `tuvo_eva == 1` Y (`pre_resp < objetivo` o `SYM_EVA_JOINT_PAIN`) | Protocolo inmediato de O2 al 100%, evaluación neurológica y preparación de recompresión en esclusa/traje. |
+| **Campos Gravitatorios — Cardio / Hemostasia / Óseo / Vestibular / Cargas Dinámicas** (`HAZARD_GRAVITY`) | `SYS_CARDIOVASCULAR` / `SYS_MUSCULOSKELETAL` / `SYS_NEURO_OCULAR` | `fc`, `pa_sis`, `pa_dia`, `hidratacion_ml`, `ejercicio_min`, `mareo_vestibular`, `env.gravedad_actual`, `SYM_ORTHOSTATIC_DIZZINESS`, `SYM_VIT_D_TAKEN` | *Cardiovascular Adaptations / Venous Haemostasis / Zero-T2 / Bone Changes / Manual Piloting / Dynamic Loads* | Cardio/Venoso Caution: `fc > base + 25` o `fc > 105` o `< 45` o `pa_sis < 90` / `> 140` o mareo ortostático o `hidratacion_ml < 75% meta` (`Critical` si `pa_sis < 85` o `fc > 130`)<br>Óseo Caution: promedio 7d `ejercicio_min < 60` (`< 45` refuerzo urgente)<br>Vestibular/Dinámico Caution: `mareo_vestibular >= 5` en gravedad `> 0g`, o `GRAV_DYNAMIC` con mareo/desacondicionamiento (`EVA/Pilotaje: NO-GO`) | Carga de fluidos/electrolitos y compresión inferior; reforzar rutina resistiva (*ARED* / *Zero-T2*) y Vitamina D; diferir pilotaje manual/EVA 24–48 h. |
+| **Entornos Cerrados — Inmunidad y Metabolismo** (`HAZARD_CLOSED_ENV`) | `SYS_IMMUNE` | `temp_c`, `glucosa_mg_dl`, `sintomas_flags` (`SYM_RASH_ALLERGY`, `SYM_VIRAL_REACTIVATION`, `SYM_INFECTION_SIGNS`) | *Immune Biomarkers / Host-Microorganism / Standard Measures* | Nominal: `temp_c` 36.1–37.2 °C, `glucosa` 70–140 mg/dL, flags en 0<br>Caution: `temp_c >= 37.8`, `glucosa < 70` o `> 140`, o cualquier flag inmune<br>Critical: `temp_c >= 39.0` o signos combinados | Reducir contacto cercano, tomar muestra de saliva seca, estabilizar glucemia, revisar higiene, filtros y cultivos (*Veggie*). |
+| **Aislamiento, Sueño, Cohesión y Nutrición** (`HAZARD_ISOLATION`) | `SYS_BEHAVIORAL` | `sueno_horas`, `estres`, `animo`, `cognitivo_ms`, `cohesion_equipo`, `calorias_kcal`, `hidratacion_ml`, `apetito_comida`, `peso_kg`, `SYM_VEGGIE_FRESH_FOOD` | *ARCHeR / Inadequate Sleep / Inadequate Teamwork / Enhanced Diet / Food Appeal* | Sueño Caution: prom. 3d `sueno_horas < 6.0` Y (`cognitivo > base * 1.15` o `estres >= 7` o `animo <= 4`) (`Critical` si `< 5.0h` y `estres >= 8`)<br>Cohesión Caution: `cohesion_equipo <= 2`<br>Nutrición Caution: prom. 7d `calorias < 80% meta` o `apetito <= 2` o `peso < 95% base` | Ajustar ciclo de iluminación LED circadiana, descargar tareas no críticas, briefing de cohesión grupal / *Veggie*, rotar a dieta enriquecida (*Enhanced Diet*) e hidratar. |
+| **Distancia de la Tierra** (`HAZARD_DISTANCE`) | Global (`autonomous_mode`) | `env.latencia_com_seg` | *Human Research Program — Distance Hazard* | Tiempo real: `<= 5.0 s`<br>Modo Autónomo: `> 5.0 s` (Luna ~1.3s, Marte 300–1320s) | Habilitar triaje médico autosuficiente a bordo con guías paso a paso y exportación diferida de bitácora. |
+| **Fisiología Hormonal Femenina y Ciclo Menstrual** (`HAZARD_GRAVITY` / `HAZARD_ISOLATION`) | `SYS_CARDIOVASCULAR` / `SYS_IMMUNE` / `SYS_BEHAVIORAL` | `sexo` (`"F"` / `"M"`), `fase_ciclo`, `dia_ciclo`, `flujo_menstrual`, `colico_menstrual`, `suplemento_hierro` | *Standard Measures / Cardiovascular Adaptations / Venous Haemostasis / ARCHeR* | Menstrual Care Caution: fase menstrual o flujo `>= 1` / cólico `>= 4` sin `suplemento_hierro` o baja hidratación<br>Menorragia Critical (`NO-GO`): flujo `3` con (`fc > base + 18`, `pa_sis < 95`, mareo ortostático o cólico `>= 7`) o cólico `>= 8`<br>Lútea Caution: `fase_ciclo == 4` con alza térmica lútea (`+0.35 °C` y `< 37.8 °C`), sueño reducido, cólico `>= 3` o ánimo `<= 5`<br>Supresión Caution: `fase_ciclo == 5` con hidratación `< 85%`, ejercicio 7d `< 65 min/d` o sin Vitamina D | Activar suplementación de Hierro (`suplemento_hierro = 1`) + *B-Complex* e hidratación reforzada; suspender EVA (`NO-GO`) ante menorragia o dismenorrea severa; ajustar termorregulación en fase lútea y vigilar hemostasia venosa + *ARED*/Vitamina D en supresión hormonal. |
 
 ---
 
-## 3. Escenarios de Prueba para el Archivo `data/sample_telemetry.csv`
-Para validar el motor en C y lucir la herramienta en la presentación, se prepararán los siguientes escenarios:
-- [ ] **Escenario 1 — Estado Nominal (Día de misión típico):** Todos los parámetros dentro de rango; contramedidas preventivas cumplidas.
-- [ ] **Escenario 2 — Evento de Partículas Solares (Radiación):** Aumento súbito de `radiation_dose_msv`; activación de alerta roja de radiación y protocolo de refugio.
-- [ ] **Escenario 3 — Fatiga y Aislamiento (ARCHeR):** 3 días consecutivos con `sleep_hours < 5.5` y `stress_level >= 8`; alerta de riesgo conductual y degradación de desempeño.
-- [ ] **Escenario 4 — Anomalía Ambiental (Entorno Cerrado):** Descenso progresivo de `spo2_percent` simulando falla en calidad de aire de cabina.
+## 3. Datos Semilla (`data/`) y Escenarios de Simulación
+
+### 3.1 Datos Iniciales al Arrancar (`seed data`)
+Para que la interfaz muestre tendencias históricas reales desde el primer arranque (`./space_health_server`), el directorio `data/` incluirá:
+- [x] **`data/defaults.json`:** valores de referencia definidos en [functions.md](./functions.md).
+- [x] **`data/missions/artemis_sim.json`:** misión activa (*Artemis IV / Tránsito a Marte — Sol 14*) con 4 astronautas asignados y entorno nominal (`101.3 kPa`, `po2 21.3 kPa`, `pco2 0.35 kPa`, `latencia_com_seg 1.3 s`).
+- [x] **`data/astronauts/astro_01.json` .. `astro_04.json`:** 4 tripulantes semilla con perfiles distintos (*Cmdr. Elena Vance* `sexo: "F"`, *Dr. Roberto Puig* `sexo: "M"` con progresión clínica de cefalea e indicios de SANS acorde al recuadro `EJ` de `DibujodePagina.jpeg`, *Ing. Kenji Takahashi* `sexo: "M"`, *Esp. Sofía Al-Mansoor* `sexo: "F"`) y **14 días de historial no plano** cada uno en `history[]` (incluyendo seguimiento del ciclo hormonal para tripulantes femeninas) para poblar los promedios de 3 y 7 días y los gráficos `<canvas>` (además de perfiles personalizados añadidos en `data/astronauts/` como `astro_07.json`).
+
+### 3.2 Escenarios del Simulador (`POST /api/missions/:id/simulate`)
+Para validar `health_engine.c` en `tests/test_engine.c` y demostrar el software en vivo frente al jurado:
+- [x] **`NOMINAL`:** restablece el entorno de cabina y parámetros a valores saludables con fluctuación fisiológica natural día a día.
+- [x] **`SPE_STORM` (Radiación):** activa `evento_spe_activo = 1`, eleva `tasa_rad_msv_h` y `dosis_dia_msv`; dispara alerta roja de radiación y protocolo de refugio.
+- [x] **`HYPOXIA` (Entorno Cerrado):** reduce `po2_kpa` y `spo2` por debajo de `90%`; activa alerta crítica respiratoria y guía de O2/ECLSS.
+- [x] **`HYPERCAPNIA` (Entorno Cerrado):** eleva `pco2_kpa > 0.6`, junto a `dolor_cabeza` y degradación cognitiva; distingue falla de *scrubber* de fatiga simple.
+- [x] **`SANS_SLEEP` (Gravedad + Aislamiento):** caída de `vision_actual` + cefalea y 3 días de `sueno_horas < 5.5` con `estres >= 8`; demuestra correlación multi-sistema (*Thigh Cuff* + higiene circadiana).
+- [x] **`FATIGUE_ISOLATION` (ARCHeR):** déficit sostenido de sueño, caída calórica/apetito y estrés alto; activa protocolos conductuales y nutricionales.
+- [x] **`DCS_EVA` (EVA / Descompresión):** marca `tuvo_eva = 1`, `pre_resp_o2_min` insuficiente y `SYM_EVA_JOINT_PAIN`; dispara protocolo crítico de O2 al 100% y recompresión.
+- [x] **`HORMONAL_FEMALE` (Ciclo Hormonal Femenino):** simula menstruación activa con flujo abundante, dismenorrea y ausencia de suplemento de hierro en tripulantes `sexo == "F"`; dispara alertas de la **Regla 9** (`HORMONAL_MENORRHAGIA_CRIT` / `HORMONAL_MENSTRUAL_CARE`) y evalúa `NO-GO` para EVA.
+
+> **Mejora de Revisión Final (`simulate_mission_scenario`):** antes de inyectar cualquier escenario nuevo, el motor limpia automáticamente los síntomas artificiales de simulaciones previas en la ventana reciente aplicando variaciones fisiológicas deterministas alrededor de la línea base de cada tripulante (y preservando la latencia configurada por el usuario), evitando tanto alertas residuales mezcladas como curvas artificialmente planas en los gráficos `<canvas>`.
+>
+> **Criterio de Prioridad Total (`is_very_critical`) y Lenguaje Clínico:** cuando un astronauta alcanza `global_status == ALERT_CRITICAL` junto con `health_score <= 50` o `critical_alert_count >= 2`, el backend marca `is_very_critical = 1` y designa `priority_astronaut_id` en `MissionHealthSummary` para enfocar toda la consola médica sobre el paciente crítico. Asimismo, las alertas generadas en `health_engine.c` y el glosario de `server.c` traducen internamente enums y medidas a español clínico claro para tripulación y personal médico.
+
+
+

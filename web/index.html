@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NASA HRP — Space Crew Health Monitor</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app-shell" class="app-shell">
+    <!-- COLUMNA IZQUIERDA: MENU OPTIONS (Inspirado en DibujodePagina.jpeg, Plegable/Desplegable) -->
+    <aside id="app-sidebar" class="sidebar">
+      <div id="sidebar-toggle-btn" class="sidebar-header" role="button" tabindex="0" aria-expanded="true"
+           title="Clic para plegar o desplegar el panel OPTIONS"
+           onclick="toggleSidebar()"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebar();}">
+        <span class="bars-icon">|||</span>
+        <span class="options-title">OPTIONS</span>
+        <span id="sidebar-chevron" class="sidebar-chevron" aria-hidden="true">◂</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button id="nav-cargar" class="nav-btn" type="button" onclick="switchOptionView('cargar')" title="CARGAR — Check-in, Archivo .JSON y Nuevo Astronauta">
+          <span class="nav-btn-icon">＋</span>
+          <div class="nav-btn-text">
+            <strong>CARGAR</strong>
+            <small>Check-in · Archivo .JSON · Nuevo</small>
+          </div>
+        </button>
+
+        <button id="nav-mostrar" class="nav-btn active" type="button" onclick="switchOptionView('mostrar')" title="MOSTRAR — Tripulación y Credenciales">
+          <span class="nav-btn-icon">◈</span>
+          <div class="nav-btn-text">
+            <strong>MOSTRAR</strong>
+            <small>Tripulación y Credenciales</small>
+          </div>
+        </button>
+
+        <button id="nav-promedio" class="nav-btn" type="button" onclick="switchOptionView('promedio')" title="PROMEDIO DE SALUD — Resumen HRP y Cabina ECLSS">
+          <span class="nav-btn-icon">♥</span>
+          <div class="nav-btn-text">
+            <strong>PROMEDIO DE SALUD</strong>
+            <small>Resumen HRP y Cabina ECLSS</small>
+          </div>
+        </button>
+
+        <button id="nav-glosario" class="nav-btn" type="button" onclick="switchOptionView('glosario')" title="GLOSARIO HRP — Protocolos, Síntomas, Ciclo Femenino y Fuentes NASA/CSA">
+          <span class="nav-btn-icon">📖</span>
+          <div class="nav-btn-text">
+            <strong>GLOSARIO HRP</strong>
+            <small>Protocolos · Síntomas · Fuentes</small>
+          </div>
+        </button>
+      </nav>
+
+      <!-- Filtro rapido de Mision y Estado -->
+      <div class="sidebar-section">
+        <label class="sidebar-label" for="mission-select">MISIÓN ACTIVA</label>
+        <select id="mission-select" class="console-select" onchange="onMissionSelectChange(this.value)">
+          <option value="artemis_sim">Cargando misiones...</option>
+        </select>
+
+        <label class="sidebar-label" style="margin-top: 12px;">FILTRO RÁPIDO</label>
+        <div class="filter-pills">
+          <button type="button" class="filter-pill active" data-filter="ALL" onclick="setCrewFilter('ALL')">Todos</button>
+          <button type="button" class="filter-pill" data-filter="CAUTION" onclick="setCrewFilter('CAUTION')">Precaución</button>
+          <button type="button" class="filter-pill" data-filter="CRITICAL" onclick="setCrewFilter('CRITICAL')">Crítico</button>
+          <button type="button" class="filter-pill filter-pill-vc" data-filter="VERY_CRITICAL" onclick="setCrewFilter('VERY_CRITICAL')">Muy Crítico</button>
+        </div>
+      </div>
+
+      <!-- SIMULADOR (DEMO) Colapsable -->
+      <div class="sidebar-section simulator-box">
+        <button type="button" class="simulator-toggle" onclick="toggleSimulatorPanel()">
+          <span>⚡ SIMULADOR HRP (DEMO)</span>
+          <span id="sim-chevron">▾</span>
+        </button>
+        <div id="simulator-body" class="simulator-body">
+          <div class="sim-subtitle">Latencia de Comunicación (Distancia)</div>
+          <div class="latency-btns">
+            <button type="button" class="lat-btn" onclick="setMissionLatency(0.2)">Órbita (0.2s)</button>
+            <button type="button" class="lat-btn" onclick="setMissionLatency(1.3)">Luna (1.3s)</button>
+            <button type="button" class="lat-btn lat-mars" onclick="setMissionLatency(840)">Marte (14m)</button>
+          </div>
+
+          <div class="sim-subtitle" style="margin-top: 10px;">Inyectar Escenario Clínico</div>
+          <div class="sim-grid">
+            <button type="button" class="sim-btn sim-nominal" data-sim="NOMINAL" onclick="triggerSimulation('NOMINAL')">✓ Restablecer Nominal</button>
+            <button type="button" class="sim-btn sim-crit" data-sim="SPE_STORM" onclick="triggerSimulation('SPE_STORM')">☢ Tormenta Solar (SPE)</button>
+            <button type="button" class="sim-btn sim-crit" data-sim="HYPOXIA" onclick="triggerSimulation('HYPOXIA')">🫁 Hipoxia (O₂ Bajo)</button>
+            <button type="button" class="sim-btn sim-caut" data-sim="HYPERCAPNIA" onclick="triggerSimulation('HYPERCAPNIA')">💨 Hipercapnia (CO₂)</button>
+            <button type="button" class="sim-btn sim-crit" data-sim="SANS_SLEEP" onclick="triggerSimulation('SANS_SLEEP')">👁 Visión SANS + Sueño</button>
+            <button type="button" class="sim-btn sim-caut" data-sim="FATIGUE_ISOLATION" onclick="triggerSimulation('FATIGUE_ISOLATION')">🧠 Fatiga / Aislamiento</button>
+            <button type="button" class="sim-btn sim-crit" data-sim="DCS_EVA" onclick="triggerSimulation('DCS_EVA')">👩‍🚀 Descompresión EVA</button>
+            <button type="button" class="sim-btn sim-fem" data-sim="HORMONAL_FEMALE" onclick="triggerSimulation('HORMONAL_FEMALE')">♀ Ciclo Hormonal Femenino</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="offline-indicator">
+          <span class="dot-online"></span> 100% OFFLINE · SISTEMA AUTÓNOMO
+        </div>
+        <div id="last-sync-label" class="sync-time">Sincronizado localmente</div>
+      </div>
+    </aside>
+
+    <!-- COLUMNA DERECHA: CABECERA DE MISION + VISTAS PRINCIPALES -->
+    <main class="main-panel">
+      <!-- Barra superior de Mision -->
+      <header class="mission-topbar">
+        <div class="mission-title-group">
+          <div class="mission-eyebrow">SISTEMA AUTÓNOMO DE MONITOREO MÉDICO ESPACIAL · NASA HRP</div>
+          <h1 id="mission-header-title" class="mission-title">MISIÓN: Cargando...</h1>
+        </div>
+
+        <div class="mission-badges">
+          <button type="button" class="glossary-quick-btn" onclick="switchOptionView('glosario')" title="Consultar Glosario Clínico NASA HRP / CSA">
+            📖 Glosario HRP
+          </button>
+          <div id="autonomous-badge" class="auto-badge auto-realtime">
+            ENLACE TIERRA TIEMPO REAL
+          </div>
+          <div class="avg-health-pill" onclick="switchOptionView('promedio')" title="Ver detalle del Promedio de Salud">
+            <span class="avg-label">PROMEDIO DE SALUD</span>
+            <strong id="header-health-avg" class="avg-value">--%</strong>
+          </div>
+          <div id="mission-orb" class="mission-orb orb-ok" title="Estado general de la misión"></div>
+        </div>
+      </header>
+
+      <!-- Notificacion Toast no intrusiva -->
+      <div id="toast-banner" class="toast-banner hidden"></div>
+
+      <!-- Banner de Prioridad Total cuando hay al menos un tripulante Muy Critico -->
+      <div id="priority-emergency-banner" class="priority-emergency-banner hidden" role="alert">
+        <div class="priority-banner-content">
+          <span class="priority-pulse-tag">🚨 PRIORIDAD MÉDICA TOTAL</span>
+          <div class="priority-banner-text">
+            <strong id="priority-patient-label">Paciente en estado muy crítico</strong>
+            <span id="priority-patient-reason">Atención médica exclusiva habilitada. Las funciones no prioritarias permanecen bloqueadas hasta estabilizar al tripulante.</span>
+          </div>
+        </div>
+        <button type="button" class="action-btn btn-priority-focus" onclick="focusPriorityAstronaut()">
+          Atender Paciente Prioritario
+        </button>
+      </div>
+
+      <!-- =================================================================
+           VISTA 1: MOSTRAR (Grilla de Credenciales + Detalle)
+           ================================================================= -->
+      <section id="view-mostrar" class="option-view">
+        <div class="section-bar">
+          <h2 class="section-heading">MONITOR DE TRIPULACIÓN — CREDENCIALES ASIGNADAS</h2>
+          <span id="crew-counter-label" class="section-meta">0 tripulantes</span>
+        </div>
+
+        <!-- Barra de filtros combinables -->
+        <div id="crew-filter-bar" class="crew-filter-bar">
+          <div class="crew-filter-field">
+            <label for="filter-first-name">Nombre</label>
+            <input type="search" id="filter-first-name" class="console-input" placeholder="Ej. Elena, Marcus..." oninput="applyCrewFilters()" />
+          </div>
+          <div class="crew-filter-field">
+            <label for="filter-last-name">Apellido</label>
+            <input type="search" id="filter-last-name" class="console-input" placeholder="Ej. Vance, Chen..." oninput="applyCrewFilters()" />
+          </div>
+          <div class="crew-filter-field">
+            <label for="filter-severity">Gravedad</label>
+            <select id="filter-severity" class="console-input" onchange="setCrewFilter(this.value)">
+              <option value="ALL">Todas</option>
+              <option value="OK">Nominal (OK)</option>
+              <option value="CAUTION">Precaución</option>
+              <option value="CRITICAL">Crítico</option>
+              <option value="VERY_CRITICAL">Muy Crítico</option>
+            </select>
+          </div>
+          <div class="crew-filter-field">
+            <label for="filter-eva">Aptitud EVA</label>
+            <select id="filter-eva" class="console-input" onchange="applyCrewFilters()">
+              <option value="ALL">Todas</option>
+              <option value="GO">GO (Apto)</option>
+              <option value="RESTRICTED">RESTRICTED (Restringido)</option>
+              <option value="NO_GO">NO-GO (No Apto)</option>
+            </select>
+          </div>
+          <div class="crew-filter-field">
+            <label for="filter-sex">Sexo</label>
+            <select id="filter-sex" class="console-input" onchange="applyCrewFilters()">
+              <option value="ALL">Todos</option>
+              <option value="F">Femenino (♀)</option>
+              <option value="M">Masculino (♂)</option>
+            </select>
+          </div>
+          <div class="crew-filter-field">
+            <label for="filter-sort">Ordenar</label>
+            <select id="filter-sort" class="console-input" onchange="applyCrewFilters()">
+              <option value="PRIORITY">Prioridad Clínica</option>
+              <option value="SCORE_ASC">Menor Puntaje</option>
+              <option value="SCORE_DESC">Mayor Puntaje</option>
+              <option value="FIRST_NAME">Nombre (A–Z)</option>
+              <option value="LAST_NAME">Apellido (A–Z)</option>
+            </select>
+          </div>
+          <div class="crew-filter-actions">
+            <button type="button" class="action-btn btn-secondary btn-compact" onclick="clearCrewFilters()">
+              ✕ Limpiar Filtros
+            </button>
+          </div>
+        </div>
+
+        <!-- Grilla de tarjetas de tripulantes -->
+        <div id="crew-grid" class="crew-grid"></div>
+
+        <!-- Ficha Detallada del Astronauta seleccionado -->
+        <div id="astronaut-detail-panel" class="detail-card-ej hidden">
+          <div class="detail-ej-header">
+            <div class="detail-ej-cred">
+              <div class="detail-avatar-wrap">
+                <img id="detail-avatar" class="detail-avatar-img" src="assets/avatars/astro_01.svg" alt="Avatar" onerror="this.onerror=null;this.src='assets/avatars/astro_01.svg'" />
+                <input type="file" id="detail-avatar-upload" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="hidden" onchange="onDetailAvatarSelected(event)" />
+                <button type="button" class="avatar-upload-mini-btn" onclick="document.getElementById('detail-avatar-upload').click()" title="Subir nueva foto personalizada para este astronauta">
+                  📷 Cambiar Foto
+                </button>
+              </div>
+              <div class="detail-id-block">
+                <div class="detail-tag-row">
+                  <span id="detail-id-badge" class="mono-tag">astro_01</span>
+                  <span id="detail-sex-badge" class="sex-badge sex-f">♀ FEMENINO</span>
+                  <span id="detail-eva-badge" class="eva-badge eva-go">EVA: GO</span>
+                  <span id="detail-auto-tag" class="auto-mini-tag hidden">TRIAJE AUTÓNOMO</span>
+                </div>
+                <h2 id="detail-name" class="detail-name">Nombre Astronauta</h2>
+                <div id="detail-role" class="detail-role">Rol de Misión</div>
+                <div class="detail-status-line">
+                  <span class="status-word">ESTADO</span>
+                  <span id="detail-heart" class="heart-icon heart-ok">♥</span>
+                  <strong id="detail-score" class="detail-score-num">100%</strong>
+                  <span class="status-sep">·</span>
+                  <span id="detail-summary-text" class="detail-summary-text">Nominal</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-ej-actions">
+              <button type="button" class="action-btn btn-primary" onclick="openCheckinForCurrentAstronaut()">
+                ＋ Check-in Rápido
+              </button>
+              <button type="button" class="action-btn btn-secondary" onclick="exportCurrentAstronautLog()">
+                ⬇ Exportar Bitácora (.json)
+              </button>
+              <button type="button" id="detail-delete-btn" class="action-btn btn-danger" onclick="deleteCurrentAstronaut()">
+                🗑 Eliminar
+              </button>
+              <button type="button" id="detail-close-btn" class="close-circle-btn" onclick="closeAstronautDetail()" title="Cerrar ficha (×)">
+                ×
+              </button>
+            </div>
+          </div>
+
+          <div class="detail-ej-grid">
+            <!-- Columna 1: Mapa Corporal SVG Ampliado de los 7 Sistemas -->
+            <div class="detail-box detail-bodymap-box">
+              <h3 class="box-title">MAPA CORPORAL INTERACTIVO (7 SISTEMAS HRP)</h3>
+              <p class="body-diagram-hint">Pasa el cursor o haz clic sobre una zona del cuerpo o en la leyenda para inspeccionar cada sistema.</p>
+              <div class="body-map-container">
+                <svg id="body-map-svg" class="body-svg" viewBox="0 0 440 410" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa corporal de 7 sistemas clínicos">
+                  <!-- 6. Radiacion Externa (Halo) -->
+                  <ellipse id="svg-sys-6" class="body-zone" data-sys="6" cx="220" cy="206" rx="110" ry="172" fill="none" stroke="#22c55e" stroke-width="4" stroke-dasharray="8 5" opacity="0.86"/>
+                  <!-- Silueta base anatomica -->
+                  <path d="M220 44 C200 44 190 58 190 76 C190 93 202 106 220 106 C238 106 250 93 250 76 C250 58 240 44 220 44 Z" fill="#172a46" stroke="#38bdf8" stroke-width="1.8"/>
+                  <path d="M174 114 L266 114 L290 228 L268 232 L250 152 L250 242 L262 374 L229 374 L220 260 L211 374 L178 374 L190 242 L190 152 L172 232 L150 228 Z" fill="#13233b" stroke="#334155" stroke-width="1.8"/>
+                  <!-- 5. Conducta y Sueno (Arco craneal superior) -->
+                  <path id="svg-sys-5" class="body-zone" data-sys="5" d="M190 50 Q220 25 250 50" fill="none" stroke="#22c55e" stroke-width="6.5" stroke-linecap="round"/>
+                  <!-- 1. Neuro-Ocular / SANS (Franja ocular) -->
+                  <rect id="svg-sys-1" class="body-zone" data-sys="1" x="198" y="64" width="44" height="15" rx="7.5" fill="#22c55e" opacity="0.94"/>
+                  <!-- 2. Respiratorio / EVA (Pulmones separados) -->
+                  <ellipse id="svg-sys-2-l" class="body-zone" data-sys="2" cx="196" cy="148" rx="12" ry="22" fill="#22c55e" opacity="0.86"/>
+                  <ellipse id="svg-sys-2-r" class="body-zone" data-sys="2" cx="244" cy="148" rx="12" ry="22" fill="#22c55e" opacity="0.86"/>
+                  <!-- 0. Cardiovascular (Corazon central sin solapamiento) -->
+                  <circle id="svg-sys-0" class="body-zone" data-sys="0" cx="220" cy="154" r="10.5" fill="#22c55e" stroke="#080e1a" stroke-width="2"/>
+                  <!-- 4. Inmune y Metabolico (Zona abdominal) -->
+                  <rect id="svg-sys-4" class="body-zone" data-sys="4" x="196" y="196" width="48" height="32" rx="9" fill="#22c55e" opacity="0.9"/>
+                  <!-- 3. Osteomuscular (Extremidades superiores e inferiores) -->
+                  <path id="svg-sys-3" class="body-zone" data-sys="3" d="M168 134 L158 222 M272 134 L282 222 M197 258 L191 364 M243 258 L249 364" stroke="#22c55e" stroke-width="7.5" stroke-linecap="round"/>
+                  <!-- Lineas guia y etiquetas claras con anclaje seguro -->
+                  <g class="svg-labels" font-size="12.5" font-weight="700" fill="#e2e8f0">
+                    <line x1="136" y1="70" x2="108" y2="40" stroke="#64748b" stroke-width="1.3"/>
+                    <text x="102" y="44" text-anchor="end">Radiación</text>
+                    <line x1="246" y1="38" x2="332" y2="38" stroke="#64748b" stroke-width="1.3"/>
+                    <text x="338" y="42" text-anchor="start">Conducta</text>
+                    <line x1="198" y1="72" x2="108" y2="78" stroke="#64748b" stroke-width="1.3"/>
+                    <text x="102" y="82" text-anchor="end">Neuro-Ocular</text>
+                    <line x1="256" y1="148" x2="332" y2="148" stroke="#64748b" stroke-width="1.3"/>
+                    <text x="338" y="152" text-anchor="start">Respiratorio</text>
+                    <line x1="209" y1="154" x2="108" y2="154" stroke="#64748b" stroke-width="1.3"/>
+                    <text x="102" y="158" text-anchor="end">Cardio</text>
+                    <line x1="244" y1="212" x2="332" y2="212" stroke="#64748b" stroke-width="1.3"/>
+                    <text x="338" y="216" text-anchor="start">Inmune</text>
+                    <line x1="193" y1="310" x2="108" y2="310" stroke="#64748b" stroke-width="1.3"/>
+                    <text x="102" y="314" text-anchor="end">Osteomuscular</text>
+                  </g>
+                </svg>
+                <div id="system-legend-list" class="system-legend-list"></div>
+              </div>
+            </div>
+
+            <!-- Columna 2: Alertas HRP + Contramedidas + Panel Hormonal Femenino -->
+            <div class="detail-box">
+              <h3 class="box-title">ASISTENTE DE CONTRAMEDIDAS Y ALERTAS NASA HRP</h3>
+              <div id="detail-alerts-list" class="alerts-list"></div>
+
+              <div class="countermeasure-quick-bar">
+                <span class="cm-bar-title">Contramedidas Activas (1-Clic):</span>
+                <div class="cm-toggle-row">
+                  <button type="button" id="cm-btn-cuff" class="cm-chip" onclick="toggleQuickCountermeasure(32)">Thigh Cuff</button>
+                  <button type="button" id="cm-btn-bcomp" class="cm-chip" onclick="toggleQuickCountermeasure(64)">Complejo B</button>
+                  <button type="button" id="cm-btn-vitd" class="cm-chip" onclick="toggleQuickCountermeasure(128)">Vitamina D</button>
+                  <button type="button" id="cm-btn-veggie" class="cm-chip" onclick="toggleQuickCountermeasure(256)">Dieta Veggie</button>
+                </div>
+              </div>
+
+              <!-- Sub-panel de Fisiologia Hormonal (solo visible para tripulacion femenina) -->
+              <div id="detail-hormonal-panel" class="hormonal-detail-box hidden">
+                <div class="hormonal-box-header">
+                  <span class="hormonal-title">♀ FISIOLOGÍA HORMONAL Y CICLO MENSTRUAL</span>
+                  <span id="detail-cycle-phase-badge" class="cycle-phase-pill">Folicular</span>
+                </div>
+                <div id="detail-hormonal-metrics" class="hormonal-metrics-row"></div>
+                <div class="hormonal-actions-row">
+                  <button type="button" id="cm-btn-iron" class="cm-chip cm-chip-fem" onclick="toggleFemaleIronCountermeasure()">
+                    💊 Suplemento Hierro (Fe) + Hidratación (+350 ml)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra colapsable de Estadisticas Clinicas y Graficos (oculta por defecto) -->
+          <div class="stats-collapse-bar">
+            <button type="button" id="detail-stats-toggle-btn" class="stats-toggle-btn" aria-expanded="false" onclick="toggleDetailStatsPanel()">
+              <span id="detail-stats-toggle-icon" class="stats-toggle-icon">▸</span>
+              <span>📊 Mostrar Estadísticas Clínicas y Gráficos Históricos</span>
+              <span class="stats-toggle-hint">Signos vitales vs. base · Dosimetría · 6 tendencias</span>
+            </button>
+          </div>
+
+          <div id="detail-stats-panel" class="stats-collapsible-panel hidden">
+            <div class="detail-box" style="margin-bottom: 18px;">
+              <h3 class="box-title">SIGNOS VITALES VS. REFERENCIA BASAL PERSONAL</h3>
+              <div id="vitals-comparison-grid" class="vitals-comparison-grid"></div>
+
+              <div class="rad-bar-section">
+                <div class="rad-bar-labels">
+                  <span>Dosimetría Acumulada de Carrera (Límite NASA: 600 mSv)</span>
+                  <strong id="detail-rad-text">0.0 / 600 mSv</strong>
+                </div>
+                <div class="rad-progress-track">
+                  <div id="detail-rad-fill" class="rad-progress-fill" style="width: 10%;"></div>
+                  <div class="rad-caution-marker" title="Umbral Precaución 80% (480 mSv)"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Graficos de Tendencias Historicas -->
+            <div class="detail-charts-section">
+              <div class="charts-header">
+                <h3 class="box-title">EVOLUCIÓN HISTÓRICA (ÚLTIMOS 14–30 DÍAS)</h3>
+                <span class="chart-legend-note">Línea punteada = Referencia Basal Personal</span>
+              </div>
+              <div class="charts-grid">
+                <div class="chart-card">
+                  <div class="chart-title">Frecuencia Cardíaca (lpm)</div>
+                  <canvas id="canvas-fc" width="320" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                  <div class="chart-title">Saturación SpO₂ (%)</div>
+                  <canvas id="canvas-spo2" width="320" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                  <div class="chart-title">Horas de Sueño (h/día)</div>
+                  <canvas id="canvas-sueno" width="320" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                  <div class="chart-title">Dosis Radiación Diaria (mSv)</div>
+                  <canvas id="canvas-rad" width="320" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                  <div class="chart-title">Nivel de Estrés (1–10)</div>
+                  <canvas id="canvas-estres" width="320" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                  <div class="chart-title">Agudeza Visual (Índice SANS)</div>
+                  <canvas id="canvas-vision" width="320" height="150"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           VISTA 2: CARGAR / CARGAR ARCHIVO (Check-in, Subir .JSON, Nuevo)
+           ================================================================= -->
+      <section id="view-cargar" class="option-view hidden">
+        <div class="section-bar">
+          <h2 class="section-heading">CENTRO DE CARGA DE DATOS E IMPORTACIÓN</h2>
+          <div class="subtabs">
+            <button type="button" id="subtab-btn-checkin" class="subtab-btn active" onclick="switchCargarTab('checkin')">
+              1. Crew Check-in Diario
+            </button>
+            <button type="button" id="subtab-btn-file" class="subtab-btn" onclick="switchCargarTab('file')">
+              2. Cargar Archivo (.JSON)
+            </button>
+            <button type="button" id="subtab-btn-create" class="subtab-btn" onclick="switchCargarTab('create')">
+              3. Nuevo Astronauta / Misión
+            </button>
+          </div>
+        </div>
+
+        <!-- SUB-TAB 1: CREW CHECK-IN DIARIO + MINI-TEST DE REFLEJOS -->
+        <div id="cargar-tab-checkin" class="cargar-panel">
+          <form id="checkin-form" onsubmit="submitCrewCheckin(event)">
+            <div class="form-top-row">
+              <div class="form-group">
+                <label for="ci-astronaut">Tripulante a Evaluar</label>
+                <select id="ci-astronaut" class="console-input" onchange="prefillCheckinFromAstronaut(this.value)" required></select>
+              </div>
+              <div class="form-group">
+                <label for="ci-dia">Sol / Día de Misión</label>
+                <input type="number" id="ci-dia" class="console-input" min="1" max="9999" value="14" required />
+              </div>
+              <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="button" class="action-btn btn-secondary" onclick="prefillCheckinFromAstronaut(document.getElementById('ci-astronaut').value)">
+                  ↻ Rellenar con Última Muestra
+                </button>
+              </div>
+            </div>
+
+            <div class="form-columns">
+              <!-- Campos rapidos conductuales y sintomas -->
+              <div class="form-card">
+                <h3 class="box-title">MÉTRICAS RÁPIDAS DE SUEÑO, CONDUCTA Y SÍNTOMAS</h3>
+                <div class="input-grid-2">
+                  <div class="form-group">
+                    <label for="ci-sueno-horas">Horas de Sueño (0–24 h)</label>
+                    <input type="number" step="0.1" min="0" max="24" id="ci-sueno-horas" class="console-input" value="7.5" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-sueno-calidad">Calidad de Sueño (1–5)</label>
+                    <input type="number" min="1" max="5" id="ci-sueno-calidad" class="console-input" value="4" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-animo">Estado de Ánimo (1–10)</label>
+                    <input type="number" min="1" max="10" id="ci-animo" class="console-input" value="8" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-estres">Nivel de Estrés (1–10)</label>
+                    <input type="number" min="1" max="10" id="ci-estres" class="console-input" value="3" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-cohesion">Cohesión de Equipo (1–5)</label>
+                    <input type="number" min="1" max="5" id="ci-cohesion" class="console-input" value="5" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-apetito">Apetito / Menú (1–5)</label>
+                    <input type="number" min="1" max="5" id="ci-apetito" class="console-input" value="4" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-dolor-cabeza">Dolor de Cabeza (0–10)</label>
+                    <input type="number" min="0" max="10" id="ci-dolor-cabeza" class="console-input" value="0" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-mareo">Mareo Vestibular (0–10)</label>
+                    <input type="number" min="0" max="10" id="ci-mareo" class="console-input" value="0" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-ejercicio">Ejercicio ARED/Zero-T2 (min)</label>
+                    <input type="number" min="0" max="600" id="ci-ejercicio" class="console-input" value="90" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-cognitivo">Tiempo de Reacción (ms)</label>
+                    <input type="number" step="1" min="50" max="5000" id="ci-cognitivo" class="console-input" value="255" required />
+                  </div>
+                </div>
+
+                <!-- Mini-Test Interactivo de Reflejos -->
+                <div class="reflex-box">
+                  <div class="reflex-header">
+                    <div>
+                      <strong>🎯 Mini-Test Psicomotor de Reflejos (PVT · 3 Toques)</strong>
+                      <p class="reflex-desc">Mide automáticamente el tiempo de reacción real en milisegundos.</p>
+                    </div>
+                    <button type="button" id="reflex-start-btn" class="action-btn btn-primary" onclick="startReflexTest()">
+                      Medir Reflejos (3 toques)
+                    </button>
+                  </div>
+                  <div id="reflex-arena" class="reflex-arena hidden" onclick="handleReflexArenaTap()">
+                    <span id="reflex-prompt">Prepárate... espera a que el panel cambie a VERDE</span>
+                  </div>
+                </div>
+
+                <!-- Bloque de Salud Hormonal y Ciclo Menstrual (solo tripulacion femenina) -->
+                <div id="ci-hormonal-box" class="hormonal-checkin-box hidden">
+                  <div class="hormonal-box-header">
+                    <strong>♀ SALUD HORMONAL Y CICLO MENSTRUAL</strong>
+                    <span id="ci-hormonal-sex-note" class="cycle-phase-pill">Fisiología Femenina</span>
+                  </div>
+                  <div class="input-grid-2">
+                    <div class="form-group">
+                      <label for="ci-fase-ciclo">Fase del Ciclo Hormonal</label>
+                      <select id="ci-fase-ciclo" class="console-input">
+                        <option value="0">0 — No Aplica / Sin Ciclo</option>
+                        <option value="1">1 — Menstrual (Días 1–5)</option>
+                        <option value="2">2 — Folicular (Días 6–12)</option>
+                        <option value="3">3 — Ovulatoria (Días 13–15)</option>
+                        <option value="4">4 — Lútea (Días 16–28 · Termogénesis)</option>
+                        <option value="5">5 — Suprimido (LARC / Anticonceptivo)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="ci-dia-ciclo">Día del Ciclo (0–60)</label>
+                      <input type="number" min="0" max="60" id="ci-dia-ciclo" class="console-input" value="0" />
+                    </div>
+                    <div class="form-group">
+                      <label for="ci-flujo-menstrual">Flujo Menstrual</label>
+                      <select id="ci-flujo-menstrual" class="console-input">
+                        <option value="0">0 — Ninguno</option>
+                        <option value="1">1 — Leve</option>
+                        <option value="2">2 — Moderado</option>
+                        <option value="3">3 — Abundante (Vigilar Hierro)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="ci-colico-menstrual">Cólico / Dismenorrea (0–10)</label>
+                      <input type="number" min="0" max="10" id="ci-colico-menstrual" class="console-input" value="0" />
+                    </div>
+                  </div>
+                  <div class="eva-check-row" style="margin-top: 8px;">
+                    <label class="checkbox-item fem-highlight">
+                      <input type="checkbox" id="ci-suplemento-hierro" />
+                      <span>Suplemento de Hierro (Fe) + Folato Activo (Prevención de Anemia Espacial)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Signos vitales, nutricion, EVA y sintomas -->
+              <div class="form-card">
+                <h3 class="box-title">SIGNOS VITALES, DOSIMETRÍA, EVA Y BIOMARCADORES</h3>
+                <div class="input-grid-3">
+                  <div class="form-group">
+                    <label for="ci-fc">FC (lpm)</label>
+                    <input type="number" step="0.5" min="25" max="230" id="ci-fc" class="console-input" value="70" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-pa-sis">PA Sistólica (mmHg)</label>
+                    <input type="number" step="1" min="50" max="250" id="ci-pa-sis" class="console-input" value="120" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-pa-dia">PA Diastólica (mmHg)</label>
+                    <input type="number" step="1" min="30" max="150" id="ci-pa-dia" class="console-input" value="80" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-spo2">SpO₂ (%)</label>
+                    <input type="number" step="0.1" min="40" max="100" id="ci-spo2" class="console-input" value="98.2" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-temp">Temp (°C)</label>
+                    <input type="number" step="0.1" min="30" max="43" id="ci-temp" class="console-input" value="36.6" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-glucosa">Glucosa (mg/dL)</label>
+                    <input type="number" step="1" min="20" max="600" id="ci-glucosa" class="console-input" value="90" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-peso">Peso (kg)</label>
+                    <input type="number" step="0.1" min="20" max="250" id="ci-peso" class="console-input" value="72.0" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-vision">Visión (0.1–2.0)</label>
+                    <input type="number" step="0.01" min="0.05" max="2.5" id="ci-vision" class="console-input" value="1.00" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-dosis">Dosis Día (mSv)</label>
+                    <input type="number" step="0.01" min="0" max="5000" id="ci-dosis" class="console-input" value="0.50" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-calorias">Calorías (kcal)</label>
+                    <input type="number" step="10" min="0" max="10000" id="ci-calorias" class="console-input" value="2500" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-hidratacion">Hidratación (ml)</label>
+                    <input type="number" step="50" min="0" max="10000" id="ci-hidratacion" class="console-input" value="2500" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="ci-preresp">Pre-Resp O₂ (min)</label>
+                    <input type="number" step="5" min="0" max="600" id="ci-preresp" class="console-input" value="120" required />
+                  </div>
+                </div>
+
+                <div class="eva-check-row">
+                  <label class="checkbox-item eva-highlight">
+                    <input type="checkbox" id="ci-tuvo-eva" />
+                    <span>Realizó Caminata Espacial (EVA) hoy</span>
+                  </label>
+                </div>
+
+                <h4 class="sub-box-title">Síntomas Clínicos y Contramedidas Activas</h4>
+                <div class="flags-grid">
+                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="1" /> Sarpullido / Alergia</label>
+                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="2" /> Reactivación Viral</label>
+                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="4" /> Signos de Infección</label>
+                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="8" /> Dolor Articular Post-EVA</label>
+                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="16" /> Mareo Ortostático</label>
+                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="32" /> Protocolo Thigh Cuff (Muslos)</label>
+                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="64" /> Suplemento Complejo B</label>
+                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="128" checked /> Vitamina D3 Tomada</label>
+                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="256" /> Vegetales Frescos Veggie</label>
+                </div>
+
+                <div class="form-submit-bar">
+                  <button type="submit" class="action-btn btn-primary btn-large">
+                    ✓ Registrar Check-in y Evaluar Salud
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- SUB-TAB 2: SUBIR ARCHIVO .JSON (CARGAR ARCHIVO) -->
+        <div id="cargar-tab-file" class="cargar-panel hidden">
+          <div class="file-upload-card">
+            <h3 class="box-title">IMPORTAR PERFIL O BITÁCORA DE ASTRONAUTA DESDE ARCHIVO (.JSON)</h3>
+            <p class="panel-help">
+              Selecciona un archivo <code>.json</code> local con la ficha, valores basales e historial clínico de un astronauta para importarlo al sistema de abordo. También puedes adjuntar una fotografía personalizada (PNG/JPG/WEBP/SVG).
+            </p>
+
+            <div class="input-grid-2">
+              <div class="dropzone-box">
+                <input type="file" id="json-file-input" accept=".json,application/json" onchange="onJsonFileSelected(event)" />
+                <label for="json-file-input" class="dropzone-label">
+                  <span class="dropzone-icon">📂</span>
+                  <strong>Seleccionar archivo .JSON del dispositivo</strong>
+                  <small id="selected-file-name">Ningún archivo seleccionado</small>
+                </label>
+              </div>
+
+              <div class="dropzone-box">
+                <input type="file" id="json-avatar-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" onchange="onJsonAvatarSelected(event)" />
+                <label for="json-avatar-file" class="dropzone-label">
+                  <img id="json-avatar-preview" class="upload-preview-thumb" src="assets/avatars/astro_01.svg" alt="Preview" />
+                  <strong>📷 Adjuntar Foto Personalizada (Opcional)</strong>
+                  <small id="json-avatar-file-name">Se usará el avatar del JSON o imagen subida</small>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="json-import-preview">Vista Previa / Editor de JSON a Importar</label>
+              <textarea id="json-import-preview" class="console-textarea" rows="10" placeholder='{"id": "astro_05", "nombre": "Dra. Valentina Ríos", "sexo": "F", "rol": "Especialista en Exobiología", "mission_id": "artemis_sim", ...}'></textarea>
+            </div>
+
+            <div class="file-actions-row">
+              <button type="button" class="action-btn btn-secondary" onclick="fillSampleImportTemplate()">
+                📋 Cargar Plantilla JSON de Ejemplo (astro_05 · Femenino)
+              </button>
+              <button type="button" class="action-btn btn-primary btn-large" onclick="submitImportedJson()">
+                ⬆ Importar Archivo .JSON al Servidor
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-TAB 3: CREAR NUEVO ASTRONAUTA O NUEVA MISION -->
+        <div id="cargar-tab-create" class="cargar-panel hidden">
+          <div class="form-columns">
+            <div class="form-card">
+              <h3 class="box-title">REGISTRAR NUEVO ASTRONAUTA (PRELLENADO CON DEFAULTS NASA)</h3>
+              <form id="new-astronaut-form" onsubmit="submitNewAstronaut(event)">
+                <div class="input-grid-2">
+                  <div class="form-group">
+                    <label for="na-id">Identificador Único (letras, números y guiones)</label>
+                    <input type="text" id="na-id" class="console-input" placeholder="astro_05" maxlength="15" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="na-nombre">Nombre Completo</label>
+                    <input type="text" id="na-nombre" class="console-input" placeholder="Dra. Valentina Ríos" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="na-sexo">Sexo Biológico</label>
+                    <select id="na-sexo" class="console-input">
+                      <option value="F">♀ Femenino (Monitoreo Ciclo Hormonal / Hierro)</option>
+                      <option value="M">♂ Masculino</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="na-rol">Rol en la Misión</label>
+                    <input type="text" id="na-rol" class="console-input" placeholder="Especialista en Exobiología" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="na-mission">Asignar a Misión</label>
+                    <select id="na-mission" class="console-input"></select>
+                  </div>
+                  <div class="form-group">
+                    <label for="na-avatar">Avatar Predefinido</label>
+                    <select id="na-avatar" class="console-input" onchange="onPredefinedAvatarChange(this.value)">
+                      <option value="assets/avatars/astro_01.svg">Retrato Credencial 01 (Comandante)</option>
+                      <option value="assets/avatars/astro_02.svg">Retrato Credencial 02 (Oficial Médico)</option>
+                      <option value="assets/avatars/astro_03.svg">Retrato Credencial 03 (Ingeniero)</option>
+                      <option value="assets/avatars/astro_04.svg">Retrato Credencial 04 (Especialista)</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="grid-column: span 2;">
+                    <label for="na-avatar-file">📷 Subir Fotografía Personalizada desde tu Dispositivo (PNG, JPG, WEBP, SVG)</label>
+                    <div class="custom-avatar-upload-row">
+                      <img id="na-avatar-preview" class="upload-preview-thumb" src="assets/avatars/astro_01.svg" alt="Vista previa de credencial" />
+                      <div class="custom-avatar-upload-controls">
+                        <input type="file" id="na-avatar-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="console-input" onchange="onNewAstronautAvatarFile(event)" />
+                        <small id="na-avatar-status" class="upload-status-note">Usando avatar predefinido o selecciona una imagen local (&le; 2 MB)</small>
+                      </div>
+                      <button type="button" class="action-btn btn-secondary" onclick="clearNewAstronautCustomAvatar()">Limpiar Foto</button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="na-rad-previa">Radiación Previa Carrera (mSv)</label>
+                    <input type="number" step="0.1" min="0" max="600" id="na-rad-previa" class="console-input" value="15.0" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="na-fc-base">FC Basal (lpm)</label>
+                    <input type="number" step="0.5" min="30" max="200" id="na-fc-base" class="console-input" value="70" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="na-sueno-base">Meta de Sueño (h/día)</label>
+                    <input type="number" step="0.1" min="1" max="16" id="na-sueno-base" class="console-input" value="7.5" required />
+                  </div>
+                </div>
+                <div class="form-submit-bar">
+                  <button type="submit" class="action-btn btn-primary">＋ Crear Astronauta</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="form-card">
+              <h3 class="box-title">CREAR NUEVA MISIÓN ESPACIAL</h3>
+              <form id="new-mission-form" onsubmit="submitNewMission(event)">
+                <div class="input-grid-2">
+                  <div class="form-group">
+                    <label for="nm-id">ID de Misión (letras, números y guiones)</label>
+                    <input type="text" id="nm-id" class="console-input" placeholder="ares_mars_01" maxlength="15" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="nm-nombre">Nombre de la Misión</label>
+                    <input type="text" id="nm-nombre" class="console-input" placeholder="Ares V — Superficie Marciana" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="nm-destino">Destino</label>
+                    <input type="text" id="nm-destino" class="console-input" placeholder="Cráter Jezero, Marte" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="nm-dia">Sol / Día Inicial</label>
+                    <input type="number" min="1" max="9999" id="nm-dia" class="console-input" value="1" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="nm-gravedad">Régimen Gravitatorio</label>
+                    <select id="nm-gravedad" class="console-input">
+                      <option value="0">Microgravedad (0g · Tránsito / Estación)</option>
+                      <option value="1">Gravedad Lunar (1/6g)</option>
+                      <option value="2">Gravedad Marciana (3/8g)</option>
+                      <option value="3">Gravedad Terrestre (1g)</option>
+                      <option value="4">Cargas Dinámicas (Lanzamiento / Reentrada)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="nm-latencia">Latencia de Comunicación (seg)</label>
+                    <input type="number" step="0.1" min="0" max="10000" id="nm-latencia" class="console-input" value="620" required />
+                  </div>
+                </div>
+                <div class="form-submit-bar">
+                  <button type="submit" class="action-btn btn-primary">🚀 Crear Misión</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           VISTA 3: PROMEDIO DE SALUD Y ENTORNO DE CABINA
+           ================================================================= -->
+      <section id="view-promedio" class="option-view hidden">
+        <div class="section-bar">
+          <h2 class="section-heading">PROMEDIO GENERAL DE SALUD DE LA MISIÓN Y PELIGROS HRP</h2>
+          <span class="section-meta">Telemetría consolidada en tiempo real</span>
+        </div>
+
+        <!-- Barra colapsable de estadisticas de mision (oculta por defecto) -->
+        <div class="stats-collapse-bar">
+          <button type="button" id="summary-stats-toggle-btn" class="stats-toggle-btn" aria-expanded="false" onclick="toggleSummaryStatsPanel()">
+            <span id="summary-stats-toggle-icon" class="stats-toggle-icon">▸</span>
+            <span>📊 Mostrar Estadísticas Generales de la Misión</span>
+            <span class="stats-toggle-hint">Promedio de salud · FC · SpO₂ · Sueño · Dosis acumulada</span>
+          </button>
+        </div>
+
+        <!-- Tarjetas de resumen grupal (colapsadas por defecto) -->
+        <div id="summary-stats-panel" class="stats-collapsible-panel hidden">
+          <div class="summary-kpi-grid">
+            <div class="kpi-card kpi-main">
+              <span class="kpi-label">PROMEDIO GENERAL DE SALUD</span>
+              <strong id="sum-health-avg" class="kpi-big-value">--%</strong>
+              <div id="sum-crew-breakdown" class="kpi-sub">OK: 0 · Precaución: 0 · Crítico: 0</div>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">FC PROMEDIO TRIPULACIÓN</span>
+              <strong id="sum-fc-avg" class="kpi-value">-- lpm</strong>
+              <div class="kpi-sub">Referencia basal: 70 lpm</div>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">SpO₂ PROMEDIO</span>
+              <strong id="sum-spo2-avg" class="kpi-value">--%</strong>
+              <div class="kpi-sub">Nominal: 95–100%</div>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">SUEÑO PROMEDIO</span>
+              <strong id="sum-sueno-avg" class="kpi-value">-- h</strong>
+              <div class="kpi-sub">Meta HRP: 7.5 h/día</div>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">ESTRÉS / DOSIS MISIÓN</span>
+              <strong id="sum-rad-avg" class="kpi-value">-- mSv</strong>
+              <div id="sum-estres-sub" class="kpi-sub">Estrés medio: --/10</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="promedio-columns">
+          <!-- Semaforo de los 5 Peligros de NASA HRP -->
+          <div class="detail-box">
+            <h3 class="box-title">SEMÁFORO DE LOS 5 PELIGROS DEL VUELO ESPACIAL (NASA HRP)</h3>
+            <div id="hazards-semaphore-list" class="hazards-list"></div>
+          </div>
+
+          <!-- Panel de Control del Entorno de Cabina -->
+          <div class="detail-box">
+            <h3 class="box-title">ENTORNO DE CABINA Y SOPORTE VITAL ECLSS</h3>
+            <form id="cabin-env-form" onsubmit="submitCabinEnvUpdate(event)">
+              <div class="input-grid-2">
+                <div class="form-group">
+                  <label for="env-presion">Presión Cabina (kPa) [20–120]</label>
+                  <input type="number" step="0.1" min="20" max="120" id="env-presion" class="console-input" required />
+                </div>
+                <div class="form-group">
+                  <label for="env-po2">Presión Parcial de O₂ (kPa) [5–105]</label>
+                  <input type="number" step="0.1" min="5" max="105" id="env-po2" class="console-input" required />
+                </div>
+                <div class="form-group">
+                  <label for="env-pco2">Presión Parcial de CO₂ (kPa) [0–10]</label>
+                  <input type="number" step="0.01" min="0" max="10" id="env-pco2" class="console-input" required />
+                </div>
+                <div class="form-group">
+                  <label for="env-rad">Tasa Radiación Externa (mSv/h)</label>
+                  <input type="number" step="0.01" min="0" max="500" id="env-rad" class="console-input" required />
+                </div>
+                <div class="form-group">
+                  <label for="env-gravedad">Campo Gravitatorio Actual</label>
+                  <select id="env-gravedad" class="console-input">
+                    <option value="0">Microgravedad (0g · Órbita / Tránsito)</option>
+                    <option value="1">Gravedad Lunar (1/6g)</option>
+                    <option value="2">Gravedad Marciana (3/8g)</option>
+                    <option value="3">Gravedad Terrestre (1g)</option>
+                    <option value="4">Cargas Dinámicas (Lanzamiento / Reentrada)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="env-latencia">Latencia con Tierra (seg) [&gt;5s = Autónomo]</label>
+                  <input type="number" step="0.1" min="0" max="10000" id="env-latencia" class="console-input" required />
+                </div>
+              </div>
+
+              <div class="eva-check-row" style="margin-top: 10px;">
+                <label class="checkbox-item">
+                  <input type="checkbox" id="env-spe" />
+                  <span>Evento de Partículas Solares Activo (Alerta de Tormenta Solar)</span>
+                </label>
+              </div>
+
+              <div class="form-submit-bar">
+                <button type="submit" class="action-btn btn-primary">
+                  Actualizar Parámetros de Cabina y Re-evaluar Tripulación
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           VISTA 4: GLOSARIO CLÍNICO, MEDIDAS, SIGLAS Y PROTOCOLOS
+           ================================================================= -->
+      <section id="view-glosario" class="option-view hidden">
+        <div class="section-bar">
+          <div>
+            <h2 class="section-heading">📖 GLOSARIO CLÍNICO, MEDIDAS Y SIGLAS — NASA HRP &amp; CSA</h2>
+            <p class="panel-help" style="margin: 4px 0 0 0;">
+              Referencia médica embarcada sobre los 5 Peligros del Vuelo Espacial, protocolos de contramedidas, definiciones de todas las unidades de medida, siglas operativas, síntomas, salud femenina y umbrales clínicos. Haz clic en cualquier tarjeta para desplegar su detalle.
+            </p>
+          </div>
+          <div class="glossary-header-controls">
+            <span id="glossary-count-badge" class="section-meta">Cargando entradas...</span>
+            <button type="button" class="action-btn btn-secondary btn-compact" onclick="expandAllGlossary(true)">Expandir Todo</button>
+            <button type="button" class="action-btn btn-secondary btn-compact" onclick="expandAllGlossary(false)">Colapsar Todo</button>
+          </div>
+        </div>
+
+        <div class="glossary-toolbar">
+          <div class="glossary-search-wrap">
+            <input type="search" id="glossary-search-input" class="console-input glossary-search"
+                   placeholder="🔍 Buscar protocolo, medida, sigla o síntoma (ej. SANS, mSv, kPa, ECLSS, PVT, ARED, hierro)..."
+                   oninput="filterGlossaryView()" />
+          </div>
+          <div class="glossary-cat-pills">
+            <button type="button" class="glossary-cat-btn active" data-cat="ALL" onclick="setGlossaryCategory('ALL')">Todos</button>
+            <button type="button" class="glossary-cat-btn" data-cat="HAZARDS" onclick="setGlossaryCategory('HAZARDS')">5 Peligros HRP</button>
+            <button type="button" class="glossary-cat-btn" data-cat="PROTOCOLS" onclick="setGlossaryCategory('PROTOCOLS')">Protocolos y Contramedidas</button>
+            <button type="button" class="glossary-cat-btn" data-cat="SYMPTOMS" onclick="setGlossaryCategory('SYMPTOMS')">Síntomas y Condiciones</button>
+            <button type="button" class="glossary-cat-btn" data-cat="HORMONAL" onclick="setGlossaryCategory('HORMONAL')">♀ Salud Hormonal Femenina</button>
+            <button type="button" class="glossary-cat-btn" data-cat="THRESHOLDS" onclick="setGlossaryCategory('THRESHOLDS')">Umbrales y Puntajes</button>
+            <button type="button" class="glossary-cat-btn" data-cat="MEASURES" onclick="setGlossaryCategory('MEASURES')">Medidas y Unidades</button>
+            <button type="button" class="glossary-cat-btn" data-cat="ACRONYMS" onclick="setGlossaryCategory('ACRONYMS')">Siglas y Acrónimos</button>
+          </div>
+        </div>
+
+        <div id="glossary-cards-grid" class="glossary-cards-grid"></div>
+
+        <div class="detail-box glossary-sources-box">
+          <details class="glossary-sources-details">
+            <summary class="glossary-sources-summary">
+              <span>📚 FUENTES OFICIALES NASA HUMAN RESEARCH PROGRAM (HRP) Y CANADIAN SPACE AGENCY (CSA)</span>
+              <span class="glossary-expand-cue">Clic para desplegar enlaces ▾</span>
+            </summary>
+            <div id="glossary-sources-list" class="glossary-sources-list"></div>
+          </details>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

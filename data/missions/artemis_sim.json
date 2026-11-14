@@ -1,0 +1,24 @@
+{
+  "id": "artemis_sim",
+  "nombre": "Artemis IV / Tránsito a Marte — Sol 14",
+  "destino": "Tránsito a Marte",
+  "dia_actual": 14,
+  "crew_count": 5,
+  "env": {
+    "presion_cabina_kpa": 101.3,
+    "po2_kpa": 21.3,
+    "pco2_kpa": 0.35,
+    "tasa_rad_msv_h": 0.02,
+    "evento_spe_activo": 0,
+    "gravedad_actual": 0,
+    "gravedad_nombre": "GRAV_MICRO",
+    "latencia_com_seg": 1.3
+  },
+  "crew_ids": [
+    "astro_01",
+    "astro_02",
+    "astro_03",
+    "astro_04",
+    "astro_07"
+  ]
+}

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 210">
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#132c47"/>
+      <stop offset="100%" stop-color="#091526"/>
+    </linearGradient>
+    <linearGradient id="suit4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e40af"/>
+      <stop offset="100%" stop-color="#0f2557"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="210" fill="url(#bg4)"/>
+  <line x1="0" y1="40" x2="180" y2="40" stroke="#1e3a5f" stroke-width="0.6" opacity="0.5"/>
+  <line x1="0" y1="90" x2="180" y2="90" stroke="#1e3a5f" stroke-width="0.6" opacity="0.5"/>
+  <line x1="0" y1="140" x2="180" y2="140" stroke="#1e3a5f" stroke-width="0.6" opacity="0.5"/>
+  <!-- Shoulders -->
+  <path d="M18 210 C22 162, 52 152, 90 152 C128 152, 158 162, 162 210 Z" fill="url(#suit4)" stroke="#38bdf8" stroke-width="1.2"/>
+  <path d="M66 152 L90 186 L114 152" fill="#e2e8f0"/>
+  <circle cx="124" cy="182" r="8.5" fill="#f59e0b" opacity="0.85"/>
+  <!-- Hair bun & back -->
+  <circle cx="90" cy="36" r="16" fill="#181513"/>
+  <path d="M49 85 C46 118, 54 140, 66 144 L114 144 C126 140, 134 118, 131 85 Z" fill="#181513"/>
+  <!-- Neck -->
+  <rect x="76" y="128" width="28" height="30" rx="8" fill="#c48a62"/>
+  <!-- Head -->
+  <ellipse cx="90" cy="92" rx="35" ry="43" fill="#cf966d"/>
+  <!-- Hair front -->
+  <path d="M55 84 C56 50, 74 43, 90 43 C106 43, 124 50, 125 84 C118 67, 104 60, 90 60 C76 60, 62 67, 55 84 Z" fill="#181513"/>
+  <!-- Eyes & Brows -->
+  <path d="M67 81 Q75 77 83 80" stroke="#181513" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <path d="M97 80 Q105 77 113 81" stroke="#181513" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  <ellipse cx="75" cy="89" rx="5.2" ry="3.4" fill="#fff"/>
+  <ellipse cx="105" cy="89" rx="5.2" ry="3.4" fill="#fff"/>
+  <circle cx="75" cy="89" r="2.6" fill="#231810"/>
+  <circle cx="105" cy="89" r="2.6" fill="#231810"/>
+  <!-- Nose & Mouth -->
+  <path d="M90 88 L88 104 L93 105" stroke="#9e6b47" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M79 116 Q90 121 101 116" stroke="#963d42" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+</svg>
