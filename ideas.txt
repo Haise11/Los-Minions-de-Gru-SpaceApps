@@ -1,5 +1,13 @@
 ACÁ VAN TODAS LAS IDEAS A IMPLEMENTAR EN NUESTRO PROGRAMA:
 
+-Hacer un .jason por cada astronauta
 
+-Hacer un .jason por cada misión
 
+-Hacer .jason para valores por defecto que debería tener cada astronauta
 
+-Hacer un .md para explicar las bases del programa (C para backend, CSS, html y JavaScript para front end)
+
+-Hacer un .md para explicar cómo queremos que sea la interfaz de nuestro software
+
+-
