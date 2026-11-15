@@ -110,7 +110,7 @@ void astronaut_init_from_defaults(Astronaut *a,
     a->report.global_status = ALERT_OK;
     a->report.health_score  = 100;
     a->report.eva_aptitude  = APT_GO;
-    safe_strcpy(a->report.resumen_estado, sizeof(a->report.resumen_estado), "Nominal");
+    safe_strcpy(a->report.resumen_estado, sizeof(a->report.resumen_estado), "Normal");
 }
 
 void sample_from_baseline(DailyHealthSample *s, const AstronautBaseline *b, int dia_mision) {

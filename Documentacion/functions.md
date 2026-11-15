@@ -197,7 +197,7 @@ El núcleo evalúa al astronauta en **3 pasos** tras cada ingreso de muestra o c
 * Se determina `global_status` como la máxima severidad activa, se actualiza `system_status[0..6]` y se ordenan las alertas de `ALERT_CRITICAL` a `ALERT_CAUTION`.
 * Se calcula `health_score` (`0..100`): parte de `100`, resta `25` por cada alerta `ALERT_CRITICAL`, `10` por cada `ALERT_CAUTION` y hasta `10` puntos adicionales por desviaciones leves respecto a `AstronautBaseline` (acotado al rango `[0, 100]`), junto a `critical_alert_count` y `is_very_critical` (`1` cuando `global_status == ALERT_CRITICAL && (health_score <= 50 || critical_alert_count >= 2)`).
 * Se determina `eva_aptitude`: `APT_NO_GO` si hay cualquier `ALERT_CRITICAL`, `evento_spe_activo == 1`, `mareo_vestibular >= 5`, `colico_menstrual >= 8` o deuda aguda de sueño (`sueno_3d < 5.0`); `APT_RESTRICTED` si hay alertas `ALERT_CAUTION` o `colico_menstrual >= 4`; `APT_GO` en estado nominal.
-* Las explicaciones y contramedidas generadas por `health_engine.c` usan lenguaje clínico legible en español (por ejemplo, `gravity_mode_to_es()` convierte `GRAV_MOON` → `"Gravedad Lunar (1/6 g)"`) sin exponer identificadores de código al operador.
+* Los textos de aptitud (`aptitude_to_str()`) y resúmenes clínicos (`resumen_estado`) en `health_engine.c` devuelven términos clínicos en español (`"Normal"`, `"Apto"`, `"Restringido"`, `"No apto"`), y tanto `health_engine.c` como el glosario de `server.c` evitan exponer identificadores internos al operador médico.
 
 ---
 
@@ -222,7 +222,7 @@ El núcleo evalúa al astronauta en **3 pasos** tras cada ingreso de muestra o c
 | `GET /api/astronauts` | Listar todos los astronautas registrados | — | Array resumido (`id`, `nombre`, `sexo`, `rol`, `mission_id`, `avatar`, `global_status`, `health_score`, `critical_alert_count`, `is_very_critical`, `eva_aptitude`, `fase_ciclo`, `resumen_estado`) |
 | `POST /api/astronauts` | Crear o importar astronauta nuevo (completa faltantes con `defaults.json`, admite `history[]` opcional y avatar `data:image/...;base64,...`) | `id`, `nombre`, `sexo` (`F`/`M`), `rol`, `mission_id`, `avatar` opcional (ruta o Base64), `baseline` opcional, `history` opcional | `201 Created` + objeto `Astronaut` persistido |
 | `GET /api/astronauts/:id` | Detalle completo de un astronauta | — | Perfil, `baseline`, `radiacion_*`, `history[]`, `EvaluationReport` (incl. `critical_alert_count` e `is_very_critical`) |
-| `PUT /api/astronauts/:id` | Actualizar perfil, `mission_id` o `baseline` | Campos a actualizar | `200 OK` + `Astronaut` re-evaluado y persistido |
+| `PUT /api/astronauts/:id` | Actualizar perfil completo (`nombre`, `sexo`, `rol`, `avatar`), dosis (`radiacion_previa_msv`, `radiacion_mision_msv`), `mission_id` o `baseline` | Campos a actualizar | `200 OK` + `Astronaut` re-evaluado y persistido |
 | `DELETE /api/astronauts/:id` | Eliminar astronauta de prueba y desvincular de misión | — | `200 OK` + confirmación |
 | `POST /api/astronauts/:id/samples` | Registrar muestra / *Crew Check-in* (acepta campos parciales) | Objeto `DailyHealthSample` | `201 Created` + muestra consolidada y nuevo `EvaluationReport` |
 | `GET /api/astronauts/:id/export` | Descargar bitácora clínica completa para sincronización diferida | — | JSON descargable (`Content-Disposition: attachment`) |

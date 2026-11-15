@@ -1,13 +1,15 @@
 /* =========================================================================
- * NASA HRP — Space Crew Health Monitor (Frontend 100% Offline JS)
+ * Monitor Medico de Tripulacion (Frontend 100% Offline JS)
  * ========================================================================= */
 
 let currentMissionId = "artemis_sim";
 let currentAstronautId = null;
 let activeOptionView = "mostrar";
 let crewFilter = "ALL";
+let crewFiltersExpanded = false;
 let defaults = null;
 let currentMissionData = null;
+let allCrewList = [];
 let currentAstronautDetail = null;
 let pollTimerId = null;
 let prefillRequestSeq = 0;
@@ -16,16 +18,45 @@ let prefillRequestSeq = 0;
 let detailStatsExpanded = false;
 let summaryStatsExpanded = false;
 
-/* Estado de Prioridad Medica Total (Muy Critico) */
+/* Estado de casos en Urgencia (informativo + atajo flotante, sin bloqueos) */
 let isPriorityMode = false;
+let urgentAstronautIds = [];
 let priorityAstronautIds = new Set();
 let topPriorityAstronautId = null;
-let lastPriorityAutoFocused = null;
 
 /* Estado de carga de imagenes personalizadas (Base64 Data URL) */
 let newAstronautCustomAvatarDataUrl = null;
 let jsonCustomAvatarDataUrl = null;
+let modCustomAvatarDataUrl = null;
+let modOriginalAvatarPath = null;
 let avatarCacheBust = 0;
+
+/* Parte o segmento corporal seleccionado en el Mapa Corporal */
+let selectedBodyPartKey = null;
+
+/* Guias breves de actuacion para contramedidas aplicadas */
+const COUNTERMEASURE_GUIDANCE = [
+  {
+    mask: 32,
+    title: "Banda de Compresión en Muslos",
+    howToAct: "Colocar ambas bandas en el tercio superior del muslo en bloques diurnos para retener fluidos en piernas, aliviar presión intracraneal/SANS y vigilar sensibilidad o edema distal."
+  },
+  {
+    mask: 64,
+    title: "Suplementación Complejo B",
+    howToAct: "Administrar 1 comprimido oral diario junto con alimento sólido y agua para reforzar el metabolismo neuro-ocular, la síntesis hematopoyética y el equilibrio nervioso."
+  },
+  {
+    mask: 128,
+    title: "Suplemento de Vitamina D3",
+    howToAct: "Administrar la dosis diaria tras una comida principal acompañada de hidratación y combinar con la rutina diaria de carga mecánica ósea."
+  },
+  {
+    mask: 256,
+    title: "Dieta Vegetal Fresca",
+    howToAct: "Incorporar raciones frescas cultivadas a bordo en la ingesta del día, priorizando alimentos ricos en antioxidantes y fibra junto con refuerzo hídrico."
+  }
+];
 
 function resolveAvatarUrl(path) {
   const base = path && path.length > 0 ? path : "assets/avatars/astro_01.svg";
@@ -68,19 +99,8 @@ const SYSTEM_NAMES = [
   "6 · Radiación Espacial (Dosimetría)"
 ];
 
-const SIM_LABELS_ES = {
-  NOMINAL: "Restablecimiento Nominal",
-  SPE_STORM: "Tormenta de Partículas Solares (SPE)",
-  HYPOXIA: "Hipoxia en Cabina (O₂ Bajo)",
-  HYPERCAPNIA: "Hipercapnia (CO₂ Elevado)",
-  SANS_SLEEP: "Síndrome SANS + Deuda de Sueño",
-  FATIGUE_ISOLATION: "Fatiga y Aislamiento (ARCHeR)",
-  DCS_EVA: "Enfermedad Descompresiva Post-EVA",
-  HORMONAL_FEMALE: "Alteración Hormonal / Menorragia Femenina"
-};
-
 const CATEGORY_LABELS_ES = {
-  HAZARDS: "Peligro HRP",
+  HAZARDS: "Factor de Riesgo",
   PROTOCOLS: "Protocolo",
   SYMPTOMS: "Síntoma / Clínica",
   HORMONAL: "Salud Femenina",
@@ -90,7 +110,7 @@ const CATEGORY_LABELS_ES = {
 };
 
 const SEVERITY_LABELS_ES = {
-  OK: "Nominal",
+  OK: "Normal",
   CAUTION: "Precaución",
   CRITICAL: "Crítico"
 };
@@ -167,11 +187,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (_) {}
 
   setupBodyMapInteractions();
+  setCrewFiltersExpanded(false);
   setDetailStatsExpanded(false);
   setSummaryStatsExpanded(false);
 
   await loadDefaults();
-  await loadMissionsList();
   await refreshMissionState(true);
   loadGlossaryData();
 
@@ -241,8 +261,8 @@ function setSummaryStatsExpanded(expanded) {
     const labelSpan = btn.querySelectorAll("span")[1];
     if (labelSpan) {
       labelSpan.textContent = summaryStatsExpanded
-        ? "📊 Ocultar Estadísticas Generales de la Misión"
-        : "📊 Mostrar Estadísticas Generales de la Misión";
+        ? "📊 Ocultar Estadísticas Generales de la Tripulación"
+        : "📊 Mostrar Estadísticas Generales de la Tripulación";
     }
   }
   if (icon) icon.textContent = summaryStatsExpanded ? "▾" : "▸";
@@ -282,49 +302,36 @@ async function loadDefaults() {
   }
 }
 
-async function loadMissionsList() {
-  try {
-    const res = await fetch("/api/missions");
-    if (!res.ok) return;
-    const missions = await res.json();
-    const sel = document.getElementById("mission-select");
-    const naMission = document.getElementById("na-mission");
-    if (!Array.isArray(missions) || missions.length === 0) return;
-
-    if (!missions.some((m) => m.id === currentMissionId)) {
-      currentMissionId = missions[0].id;
-    }
-
-    if (sel) {
-      sel.innerHTML = missions
-        .map((m) => `<option value="${escapeHtml(m.id)}" ${m.id === currentMissionId ? "selected" : ""}>${escapeHtml(m.nombre)} (Sol ${m.dia_actual})</option>`)
-        .join("");
-    }
-    if (naMission) {
-      naMission.innerHTML = missions
-        .map((m) => `<option value="${escapeHtml(m.id)}" ${m.id === currentMissionId ? "selected" : ""}>${escapeHtml(m.nombre)}</option>`)
-        .join("");
-    }
-  } catch (err) {
-    console.error("Error listando misiones:", err);
-  }
-}
-
 async function refreshMissionState(initialLoad = false) {
   try {
-    const res = await fetch(`/api/missions/${encodeURIComponent(currentMissionId)}`);
-    if (!res.ok) return;
-    currentMissionData = await res.json();
+    const [missionRes, crewRes] = await Promise.all([
+      fetch(`/api/missions/${encodeURIComponent(currentMissionId)}`),
+      fetch("/api/astronauts")
+    ]);
+    if (!missionRes.ok && !crewRes.ok) return;
 
-    const shouldScrollPriority = applyVeryCriticalPriorityMode(currentMissionData);
+    if (missionRes.ok) {
+      currentMissionData = await missionRes.json();
+    } else {
+      currentMissionData = { id: currentMissionId, env: {}, summary: {}, crew: [] };
+    }
 
-    renderMissionHeader(currentMissionData);
-    renderCrewGrid(currentMissionData.crew || []);
-    renderPromedioView(currentMissionData, initialLoad);
-    populateCheckinAstronautSelector(currentMissionData.crew || [], initialLoad);
+    if (crewRes.ok) {
+      const crewArr = await crewRes.json();
+      allCrewList = Array.isArray(crewArr) ? crewArr : (currentMissionData.crew || []);
+    } else {
+      allCrewList = currentMissionData.crew || [];
+    }
+
+    updateUrgentStatus(allCrewList);
+    updateMostrarLayoutVisibility();
+    renderCrewGrid(allCrewList);
+    renderPromedioView(currentMissionData, allCrewList, initialLoad);
+    populateCheckinAstronautSelector(allCrewList, initialLoad);
+    populateModifyAstronautSelector(allCrewList, initialLoad);
 
     if (currentAstronautId) {
-      await loadAstronautDetail(currentAstronautId, shouldScrollPriority);
+      await loadAstronautDetail(currentAstronautId, false);
     }
 
     const syncLabel = document.getElementById("last-sync-label");
@@ -333,40 +340,19 @@ async function refreshMissionState(initialLoad = false) {
       syncLabel.textContent = `Último pulso local: ${now.toLocaleTimeString()}`;
     }
   } catch (err) {
-    console.error("Error refrescando estado de misión:", err);
+    console.error("Error refrescando estado clínico:", err);
   }
 }
 
-function applyVeryCriticalPriorityMode(m) {
-  const wasPriorityMode = isPriorityMode;
-  const crew = m?.crew || [];
+function updateUrgentStatus(crewList) {
+  const crew = crewList || [];
   const vcList = crew.filter(isCrewVeryCritical);
   isPriorityMode = vcList.length > 0;
-  priorityAstronautIds = new Set(vcList.map((c) => c.id));
-  topPriorityAstronautId = (m?.summary?.priority_astronaut_id && priorityAstronautIds.has(m.summary.priority_astronaut_id))
-    ? m.summary.priority_astronaut_id
-    : (vcList[0]?.id || null);
+  urgentAstronautIds = vcList.map((c) => c.id);
+  priorityAstronautIds = new Set(urgentAstronautIds);
+  topPriorityAstronautId = urgentAstronautIds[0] || null;
 
   document.body.classList.toggle("priority-mode-active", isPriorityMode);
-
-  if (!wasPriorityMode && isPriorityMode) {
-    const firstEl = document.getElementById("filter-first-name");
-    const lastEl = document.getElementById("filter-last-name");
-    const evaEl = document.getElementById("filter-eva");
-    const sexEl = document.getElementById("filter-sex");
-    const sortEl = document.getElementById("filter-sort");
-    if (firstEl) firstEl.value = "";
-    if (lastEl) lastEl.value = "";
-    if (evaEl) evaEl.value = "ALL";
-    if (sexEl) sexEl.value = "ALL";
-    if (sortEl) sortEl.value = "PRIORITY";
-    crewFilter = "ALL";
-    document.querySelectorAll(".filter-pill").forEach((btn) => {
-      btn.classList.toggle("active", btn.getAttribute("data-filter") === "ALL");
-    });
-    const sevSelect = document.getElementById("filter-severity");
-    if (sevSelect) sevSelect.value = "ALL";
-  }
 
   const banner = document.getElementById("priority-emergency-banner");
   const labelEl = document.getElementById("priority-patient-label");
@@ -375,84 +361,94 @@ function applyVeryCriticalPriorityMode(m) {
     banner.classList.toggle("hidden", !isPriorityMode);
   }
   if (isPriorityMode && topPriorityAstronautId) {
-    const topCrew = vcList.find((c) => c.id === topPriorityAstronautId) || vcList[0];
+    const topCrew = vcList[0];
     if (labelEl && topCrew) {
-      labelEl.textContent = `${topCrew.nombre} — Salud: ${topCrew.health_score}% (${topCrew.resumen_estado || "Crítico"})`;
+      labelEl.textContent = `${topCrew.nombre} — Salud: ${topCrew.health_score}% (${topCrew.resumen_estado || "Urgencia"})`;
     }
     if (reasonEl) {
-      const extra = vcList.length > 1 ? ` · ${vcList.length} tripulantes en estado muy crítico` : "";
-      reasonEl.textContent = `Atención clínica exclusiva habilitada${extra}. Funciones no prioritarias bloqueadas hasta estabilización.`;
+      const extra = vcList.length > 1 ? ` · ${vcList.length} tripulantes en estado de urgencia` : "";
+      reasonEl.textContent = `Atención clínica prioritaria recomendada${extra}. Usa el atajo flotante para ir directo en cualquier momento.`;
     }
   }
 
-  /* Bloqueo / desbloqueo de controles no prioritarios */
-  const missionSel = document.getElementById("mission-select");
-  if (missionSel) missionSel.disabled = isPriorityMode;
+  const floatBtn = document.getElementById("floating-urgent-btn");
+  const floatLbl = document.getElementById("floating-urgent-label");
+  if (floatBtn) {
+    floatBtn.classList.toggle("hidden", !isPriorityMode);
+  }
+  if (floatLbl && isPriorityMode) {
+    floatLbl.textContent = vcList.length > 1
+      ? `🚨 Urgencia (${vcList.length})`
+      : "🚨 Ir a Urgencia";
+  }
+}
 
-  const subFileBtn = document.getElementById("subtab-btn-file");
-  const subCreateBtn = document.getElementById("subtab-btn-create");
-  if (subFileBtn) subFileBtn.disabled = isPriorityMode;
-  if (subCreateBtn) subCreateBtn.disabled = isPriorityMode;
-  if (isPriorityMode) {
-    const filePanel = document.getElementById("cargar-tab-file");
-    const createPanel = document.getElementById("cargar-tab-create");
-    if ((filePanel && !filePanel.classList.contains("hidden")) ||
-        (createPanel && !createPanel.classList.contains("hidden"))) {
-      switchCargarTab("checkin");
+function focusUrgentAstronaut() {
+  if (!urgentAstronautIds || urgentAstronautIds.length === 0) return;
+  let targetId = urgentAstronautIds[0];
+  if (activeOptionView === "mostrar" && currentAstronautId) {
+    const idx = urgentAstronautIds.indexOf(currentAstronautId);
+    if (idx !== -1 && urgentAstronautIds.length > 1) {
+      targetId = urgentAstronautIds[(idx + 1) % urgentAstronautIds.length];
+    } else if (idx !== -1) {
+      const panel = document.getElementById("astronaut-detail-panel");
+      if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
     }
   }
-
-  document.querySelectorAll(".sim-btn").forEach((btn) => {
-    const simName = btn.getAttribute("data-sim") || "";
-    if (simName !== "NOMINAL") {
-      btn.disabled = isPriorityMode;
-    }
-  });
-  document.querySelectorAll(".lat-btn").forEach((btn) => {
-    btn.disabled = isPriorityMode;
-  });
-
-  const delBtn = document.getElementById("detail-delete-btn");
-  if (delBtn) {
-    delBtn.disabled = isPriorityMode && priorityAstronautIds.has(currentAstronautId);
+  switchOptionView("mostrar");
+  if (currentAstronautId !== targetId) {
+    setDetailStatsExpanded(false);
   }
-  const closeBtn = document.getElementById("detail-close-btn");
-  if (closeBtn) {
-    closeBtn.disabled = isPriorityMode && priorityAstronautIds.has(currentAstronautId);
-  }
-
-  let shouldScroll = false;
-  if (isPriorityMode && topPriorityAstronautId) {
-    const needAutoFocus = !currentAstronautId || !priorityAstronautIds.has(currentAstronautId);
-    if (needAutoFocus || lastPriorityAutoFocused !== topPriorityAstronautId) {
-      if (needAutoFocus) {
-        if (currentAstronautId !== topPriorityAstronautId) {
-          setDetailStatsExpanded(false);
-        }
-        currentAstronautId = topPriorityAstronautId;
-        shouldScroll = true;
-      }
-      lastPriorityAutoFocused = topPriorityAstronautId;
-      const ciSel = document.getElementById("ci-astronaut");
-      if (ciSel && ciSel.options.length > 0 && ciSel.value !== topPriorityAstronautId) {
-        ciSel.value = topPriorityAstronautId;
-        prefillCheckinFromAstronaut(topPriorityAstronautId);
-      }
-    }
-  } else {
-    lastPriorityAutoFocused = null;
-  }
-  return shouldScroll;
+  currentAstronautId = targetId;
+  updateMostrarLayoutVisibility();
+  loadAstronautDetail(targetId, true);
 }
 
 function focusPriorityAstronaut() {
-  if (!topPriorityAstronautId) return;
-  switchOptionView("mostrar");
-  if (currentAstronautId !== topPriorityAstronautId) {
-    setDetailStatsExpanded(false);
+  focusUrgentAstronaut();
+}
+
+function setCrewFiltersExpanded(expanded) {
+  crewFiltersExpanded = !!expanded;
+  const bar = document.getElementById("crew-filter-bar");
+  const btn = document.getElementById("filter-toggle-btn");
+  const chev = document.getElementById("filter-toggle-chevron");
+  if (bar) {
+    const showBar = crewFiltersExpanded && activeOptionView === "mostrar" && !currentAstronautId;
+    bar.classList.toggle("hidden", !showBar);
   }
-  currentAstronautId = topPriorityAstronautId;
-  loadAstronautDetail(topPriorityAstronautId, true);
+  if (btn) {
+    btn.setAttribute("aria-expanded", crewFiltersExpanded ? "true" : "false");
+    btn.classList.toggle("active", crewFiltersExpanded);
+  }
+  if (chev) {
+    chev.textContent = crewFiltersExpanded ? "▴" : "▾";
+  }
+}
+
+function toggleCrewFilterDrawer() {
+  setCrewFiltersExpanded(!crewFiltersExpanded);
+}
+
+function updateMostrarLayoutVisibility() {
+  const isMostrar = activeOptionView === "mostrar";
+  const hasDetail = !!currentAstronautId;
+
+  const filterArea = document.getElementById("topbar-filter-area");
+  if (filterArea) {
+    filterArea.classList.toggle("hidden", !isMostrar || hasDetail);
+  }
+
+  const filterBar = document.getElementById("crew-filter-bar");
+  if (filterBar) {
+    filterBar.classList.toggle("hidden", !isMostrar || hasDetail || !crewFiltersExpanded);
+  }
+
+  const crewGrid = document.getElementById("crew-grid");
+  if (crewGrid) {
+    crewGrid.classList.toggle("hidden", hasDetail);
+  }
 }
 
 /* =========================================================================
@@ -460,15 +456,21 @@ function focusPriorityAstronaut() {
  * ========================================================================= */
 function switchOptionView(viewName) {
   activeOptionView = viewName;
-  const views = ["mostrar", "cargar", "promedio", "glosario"];
+  const views = ["mostrar", "cargar", "modificar", "promedio", "glosario"];
   views.forEach((v) => {
     const sec = document.getElementById(`view-${v}`);
     const btn = document.getElementById(`nav-${v}`);
     if (sec) sec.classList.toggle("hidden", v !== viewName);
     if (btn) btn.classList.toggle("active", v === viewName);
   });
-  if (viewName === "cargar" && isPriorityMode) {
-    switchCargarTab("checkin");
+  updateMostrarLayoutVisibility();
+  if (viewName === "modificar") {
+    const sel = document.getElementById("mod-astronaut-select");
+    const preferred = currentAstronautId || (sel && sel.value) || (allCrewList[0]?.id || "");
+    if (sel && preferred) {
+      sel.value = preferred;
+      loadAstronautForModify(preferred);
+    }
   }
   if (viewName === "glosario" && !glossaryData) {
     loadGlossaryData();
@@ -476,10 +478,6 @@ function switchOptionView(viewName) {
 }
 
 function switchCargarTab(tabName) {
-  if (isPriorityMode && tabName !== "checkin") {
-    showToast("Prioridad Médica Total activa: solo está habilitado el Check-in del paciente prioritario.", true);
-    tabName = "checkin";
-  }
   const tabs = ["checkin", "file", "create"];
   tabs.forEach((t) => {
     const panel = document.getElementById(`cargar-tab-${t}`);
@@ -489,40 +487,20 @@ function switchCargarTab(tabName) {
   });
 }
 
-function onMissionSelectChange(newMissionId) {
-  if (isPriorityMode) {
-    const sel = document.getElementById("mission-select");
-    if (sel) sel.value = currentMissionId;
-    showToast("No puedes cambiar de misión mientras exista un tripulante en estado Muy Crítico.", true);
-    return;
-  }
-  currentMissionId = newMissionId;
-  currentAstronautId = null;
-  closeAstronautDetail();
-  refreshMissionState(true);
-}
-
 function setCrewFilter(filterVal) {
   crewFilter = filterVal || "ALL";
-  document.querySelectorAll(".filter-pill").forEach((btn) => {
-    btn.classList.toggle("active", btn.getAttribute("data-filter") === crewFilter);
-  });
   const sevSelect = document.getElementById("filter-severity");
   if (sevSelect && sevSelect.value !== crewFilter) {
     sevSelect.value = crewFilter;
   }
-  if (currentMissionData) {
-    renderCrewGrid(currentMissionData.crew || []);
-  }
+  renderCrewGrid(allCrewList);
   if (activeOptionView !== "mostrar") {
     switchOptionView("mostrar");
   }
 }
 
 function applyCrewFilters() {
-  if (currentMissionData) {
-    renderCrewGrid(currentMissionData.crew || []);
-  }
+  renderCrewGrid(allCrewList);
 }
 
 function clearCrewFilters() {
@@ -539,53 +517,9 @@ function clearCrewFilters() {
   setCrewFilter("ALL");
 }
 
-function toggleSimulatorPanel() {
-  const body = document.getElementById("simulator-body");
-  const chev = document.getElementById("sim-chevron");
-  if (!body) return;
-  const isHidden = body.classList.toggle("hidden");
-  if (chev) chev.textContent = isHidden ? "▸" : "▾";
-}
-
 /* =========================================================================
- * Renderizado de Cabecera y Grilla de Tarjetas
+ * Renderizado de Grilla de Tarjetas
  * ========================================================================= */
-function renderMissionHeader(m) {
-  const titleEl = document.getElementById("mission-header-title");
-  if (titleEl) {
-    titleEl.textContent = `MISIÓN: ${m.nombre}`;
-  }
-
-  const avgEl = document.getElementById("header-health-avg");
-  const avgVal = m.summary ? m.summary.mission_health_avg : m.mission_health_avg;
-  if (avgEl) {
-    avgEl.textContent = `${avgVal ?? 100}%`;
-    avgEl.style.color = avgVal < 60 ? "#ff2a4b" : avgVal < 85 ? "#ffd000" : "#00ff66";
-  }
-
-  const autoBadge = document.getElementById("autonomous-badge");
-  if (autoBadge) {
-    const lat = m.env ? m.env.latencia_com_seg : 0;
-    if (m.autonomous_mode === 1) {
-      autoBadge.className = "auto-badge auto-active";
-      autoBadge.textContent = `MODO AUTÓNOMO ACTIVO · LATENCIA ${lat.toFixed(1)}s`;
-    } else {
-      autoBadge.className = "auto-badge auto-realtime";
-      autoBadge.textContent = `ENLACE TIERRA TIEMPO REAL (${lat.toFixed(1)}s)`;
-    }
-  }
-
-  const orb = document.getElementById("mission-orb");
-  if (orb && m.summary) {
-    if (m.summary.crew_critical_count > 0) {
-      orb.className = "mission-orb orb-critical";
-    } else if (m.summary.crew_caution_count > 0) {
-      orb.className = "mission-orb orb-caution";
-    } else {
-      orb.className = "mission-orb orb-ok";
-    }
-  }
-}
 
 function severityClass(sev) {
   if (sev === 2) return "critical";
@@ -597,6 +531,15 @@ function evaBadgeClass(apt) {
   if (apt === 2) return "eva-nogo";
   if (apt === 1) return "eva-restricted";
   return "eva-go";
+}
+
+function formatEvaAptitudeEs(apt, strFallback) {
+  if (apt === 2) return "No apto";
+  if (apt === 1) return "Restringido";
+  if (apt === 0) return "Apto";
+  if (strFallback === "NO-GO" || strFallback === "No apto") return "No apto";
+  if (strFallback === "RESTRICTED" || strFallback === "Restringido") return "Restringido";
+  return "Apto";
 }
 
 function renderCrewGrid(crewList) {
@@ -654,7 +597,7 @@ function renderCrewGrid(crewList) {
   });
 
   if (counter) {
-    counter.textContent = `${filtered.length} de ${crewList.length} tripulantes visibles`;
+    counter.textContent = `${filtered.length} de ${crewList.length} tripulantes`;
   }
 
   if (filtered.length === 0) {
@@ -668,20 +611,18 @@ function renderCrewGrid(crewList) {
     .map((a) => {
       const sev = severityClass(a.global_status);
       const isVC = isCrewVeryCritical(a);
-      const isLockedCard = isPriorityMode && !isVC;
-      const evaCls = evaBadgeClass(a.eva_aptitude);
       const isSelected = a.id === currentAstronautId ? "selected" : "";
       const avatarSrc = resolveAvatarUrl(a.avatar);
       const isFem = (a.sexo || "M").toUpperCase() === "F";
       const cycleName = isFem && a.fase_ciclo > 0 ? (CYCLE_PHASE_NAMES[a.fase_ciclo] || "") : "";
       const cycleTag = cycleName ? ` · ${cycleName}` : "";
       const sexBadgeHtml = isFem
-        ? `<span class="sex-badge sex-f" title="Fisiología Femenina HRP">♀ FEM${escapeHtml(cycleTag)}</span>`
-        : `<span class="sex-badge sex-m" title="Fisiología Masculina HRP">♂ MASC</span>`;
-      const vcTagHtml = isVC ? `<span class="vc-priority-chip">🚨 MUY CRÍTICO</span>` : "";
+        ? `<span class="sex-badge sex-f" title="Fisiología Femenina">♀ FEM${escapeHtml(cycleTag)}</span>`
+        : `<span class="sex-badge sex-m" title="Fisiología Masculina">♂ MASC</span>`;
+      const vcTagHtml = isVC ? `<span class="vc-priority-chip">🚨 URGENCIA</span>` : "";
 
       return `
-        <article class="cred-card status-${sev} ${isVC ? "status-very-critical" : ""} ${isSelected} ${isLockedCard ? "priority-locked" : ""}" onclick="selectAstronautCard('${escapeAttr(a.id)}')">
+        <article class="cred-card status-${sev} ${isVC ? "status-very-critical" : ""} ${isSelected}" onclick="selectAstronautCard('${escapeAttr(a.id)}')">
           <div class="cred-photo-wrap">
             <img class="cred-photo" src="${escapeAttr(avatarSrc)}" alt="${escapeAttr(a.nombre)}" onerror="this.src='assets/avatars/astro_01.svg'" />
           </div>
@@ -699,12 +640,11 @@ function renderCrewGrid(crewList) {
               <span class="cred-status-label">ESTADO</span>
               <span class="heart-icon heart-${sev}">♥</span>
               <span class="cred-score">${a.health_score}%</span>
-              <span class="eva-badge ${evaCls}">EVA: ${escapeHtml(a.eva_aptitude_str || "GO")}</span>
             </div>
 
             <div class="cred-line-desc">
               <span class="cred-desc-label">Diagnóstico / Resumen</span>
-              <div class="cred-desc-value">${escapeHtml(a.resumen_estado || "Nominal")}</div>
+              <div class="cred-desc-value">${escapeHtml(a.resumen_estado || "Normal")}</div>
             </div>
           </div>
         </article>
@@ -717,18 +657,587 @@ function renderCrewGrid(crewList) {
  * Detalle del Astronauta e Interactividad del Mapa Corporal
  * ========================================================================= */
 let activeHighlightedSys = null;
+let activeHighlightedOverlay = null;
 
-function highlightBodySystem(sysIdx) {
+function getMinimalistOrganIconSvg(kind) {
+  const icons = {
+    eye: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M2 12c2.7-4.4 6.2-6.6 10-6.6s7.3 2.2 10 6.6c-2.7 4.4-6.2 6.6-10 6.6S4.7 16.4 2 12z"/>
+      <circle cx="12" cy="12" r="3.4"/>
+      <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/>
+    </svg>`,
+    head: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3a6.5 6.5 0 0 0-6.5 6.5c0 2.5 1.1 4.2 1.8 5.6.4.8.7 1.8.7 2.9h8c0-1.1.3-2.1.7-2.9.7-1.4 1.8-3.1 1.8-5.6A6.5 6.5 0 0 0 12 3z"/>
+      <path d="M9.5 10.2h5M12 7.8v4.8M9 21h6"/>
+    </svg>`,
+    ear: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6.5 10.5a5.8 5.8 0 0 1 11.5-1c0 3.2-2.2 4.3-2.9 6.2-.5 1.4-.4 3.4-2.1 4.3-1.4.7-3.2 0-3.5-1.5"/>
+      <path d="M9.5 10.5a2.6 2.6 0 0 1 5 .4c0 1.4-1.3 2.1-1.7 3.2"/>
+    </svg>`,
+    brain: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 4.5v15"/>
+      <path d="M12 5.2C9.8 4 7 5.2 6.6 7.5c-1.8.6-2.6 2.7-1.8 4.4-1 1.4-.5 3.6 1.1 4.4.3 2 2.2 3.3 4.2 2.9.7-.1 1.4-.5 1.9-1.1"/>
+      <path d="M12 5.2c2.2-1.2 5 0 5.4 2.3 1.8.6 2.6 2.7 1.8 4.4 1 1.4.5 3.6-1.1 4.4-.3 2-2.2 3.3-4.2 2.9-.7-.1-1.4-.5-1.9-1.1"/>
+      <path d="M8.5 9.2c1.2.4 1.6 1.4 1.2 2.3M15.5 9.2c-1.2.4-1.6 1.4-1.2 2.3M8.2 14.5c1 .2 1.8-.1 2.4-.7M15.8 14.5c-1 .2-1.8-.1-2.4-.7"/>
+    </svg>`,
+    lungs: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3v7M12 10L8.8 12.2M12 10l3.2 2.2"/>
+      <path d="M9.8 8.2C7 8.4 4.2 11.2 3.6 15.6c-.4 2.7.7 4.4 2.8 4.4 2 0 3.6-.9 3.6-3V9.5c0-.8-.1-1.3-.2-1.3z"/>
+      <path d="M14.2 8.2c2.8.2 5.6 3 6.2 7.4.4 2.7-.7 4.4-2.8 4.4-2 0-3.6-.9-3.6-3V9.5c0-.8.1-1.3.2-1.3z"/>
+    </svg>`,
+    heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M10.5 6.8V3.5h2.4v2.7"/>
+      <path d="M14.5 7.4l2.2-2.4 1.5 1.4-1.8 2"/>
+      <path d="M12 20.5c-4.5-2.8-7-6.2-6.8-9.7.2-2.8 2.4-4.5 4.8-4.1 1.1.2 1.8.9 2.3 1.7.7-1.1 2.2-1.8 3.6-1.4 2.2.6 3.5 2.7 3.1 5.4-.6 3.6-3 6-7 8.1z"/>
+      <path d="M8.2 12.6h2.1l1-2.1 1.4 3.7 1.1-1.6H16"/>
+    </svg>`,
+    stomach: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M11.2 3.5v4.3c0 1.4-1.2 2.1-2.7 2.5-2.6.7-4.1 3-3.7 5.7.4 2.7 2.8 4.5 5.8 4.5 3.8 0 7.6-2.4 8.2-6.6.5-3.4-1.4-6-4-6-1.3 0-2.1.6-2.7 1.3"/>
+      <path d="M9.6 15.2c1.1.7 2.6.8 3.9.2"/>
+    </svg>`,
+    joint: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 3.2v5.1c-1.3.4-2 1.4-1.7 2.4.3.9 1.4 1.3 2.5.9.7-.3 1.4-.3 2.2 0 1.1.4 2.2 0 2.5-.9.3-1-.4-2-1.7-2.4V3.2"/>
+      <path d="M9 20.8v-5.1c-1.3-.4-2-1.4-1.7-2.4.3-.9 1.4-1.3 2.5-.9.7.3 1.4.3 2.2 0 1.1-.4 2.2 0 2.5.9.3 1-.4 2-1.7 2.4v5.1"/>
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+    </svg>`,
+    bone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M7.5 4.2a2.2 2.2 0 0 0-3.3 2.9 2.2 2.2 0 0 0 2.6 3.1l7.1 7.1a2.2 2.2 0 0 0 3.1 2.6 2.2 2.2 0 0 0 2.9-3.3 2.2 2.2 0 0 0-2.7-2.8l-7-7a2.2 2.2 0 0 0-2.7-2.6z"/>
+    </svg>`,
+    skin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M8 12V6.5a1.2 1.2 0 0 1 2.4 0V11M10.4 11V5.2a1.2 1.2 0 0 1 2.4 0V11M12.8 11V6a1.2 1.2 0 0 1 2.4 0v5.5M15.2 11.5V8.4a1.2 1.2 0 0 1 2.4 0v5.8c0 3.2-2.2 6.3-5.6 6.3-2.5 0-4.4-1.3-5.4-3.7l-1.5-3.4a1.3 1.3 0 0 1 2.2-1.3L8 13"/>
+      <circle cx="12" cy="15.4" r="1" fill="currentColor" stroke="none"/>
+      <circle cx="14.2" cy="14.2" r="0.8" fill="currentColor" stroke="none"/>
+    </svg>`,
+    pelvis: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4.5 7.5c1.8-1.6 4.4-1.2 5.7 1.1.9 1.6 2.7 1.6 3.6 0 1.3-2.3 3.9-2.7 5.7-1.1 1.4 1.3 1.5 4.2.1 6.7-.9 1.6-2.4 3.4-4 3.6-1.2.1-2-1.1-3.6-1.1s-2.4 1.2-3.6 1.1c-1.6-.2-3.1-2-4-3.6-1.4-2.5-1.3-5.4.1-6.7z"/>
+      <circle cx="12" cy="13.2" r="1.6"/>
+    </svg>`,
+    dna: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M7 3.5c0 4.5 10 4.5 10 9s-10 4.5-10 8"/>
+      <path d="M17 3.5c0 4.5-10 4.5-10 9s10 4.5 10 8"/>
+      <path d="M8.5 6.2h7M9 12h6M8.5 17.8h7"/>
+    </svg>`
+  };
+  return icons[kind] || icons.heart;
+}
+
+function extractActiveBodySymptoms(a, latest, rep) {
+  const symptoms = [];
+  const flags = latest ? latest.sintomas_flags || 0 : 0;
+  const sysStatus = rep.system_status || [0, 0, 0, 0, 0, 0, 0];
+  const b = a.baseline || {};
+  const isFem = (a.sexo || "M").toUpperCase() === "F";
+  const totalRad = (a.radiacion_previa_msv || 0) + (a.radiacion_mision_msv || 0);
+
+  const pushSym = (id, title, detail, organ, sysIdx, overlayId, sev) => {
+    if (symptoms.some((s) => s.id === id)) return;
+    symptoms.push({ id, title, detail, organ, sysIdx, overlayId, sev });
+  };
+
+  if (latest) {
+    /* 1. Dolor Ocular / SANS / Agudeza Visual */
+    const visionDrop = (b.vision_base || 1.0) - (latest.vision_actual || 1.0);
+    if (latest.vision_actual <= 0.72 || visionDrop >= 0.25 || sysStatus[1] >= 2) {
+      pushSym(
+        "vision",
+        "Dolor / Presión Ocular (SANS)",
+        `Agudeza visual ${latest.vision_actual.toFixed(2)} (base ${(b.vision_base || 1.0).toFixed(2)}) · Posible edema papilar`,
+        "eye",
+        1,
+        "sym-overlay-vision",
+        latest.vision_actual <= 0.65 || visionDrop >= 0.35 ? 2 : 1
+      );
+    } else if (visionDrop >= 0.12 || sysStatus[1] === 1) {
+      pushSym(
+        "vision",
+        "Fatiga / Tensión Ocular",
+        `Descenso visual leve (${latest.vision_actual.toFixed(2)}) por desplazamiento cefálico`,
+        "eye",
+        1,
+        "sym-overlay-vision",
+        1
+      );
+    }
+
+    /* 2. Cefalea / Presión Intracraneal */
+    if ((latest.dolor_cabeza || 0) >= 4) {
+      pushSym(
+        "headache",
+        latest.dolor_cabeza >= 7 ? "Cefalea Intensa / Migraña" : "Cefalea Frontal / Presión Craneal",
+        `Dolor de cabeza nivel ${latest.dolor_cabeza}/10`,
+        "head",
+        1,
+        "sym-overlay-headache",
+        latest.dolor_cabeza >= 7 ? 2 : 1
+      );
+    }
+
+    /* 3. Mareo Ortostático / Vestibular (bit 16) */
+    if ((flags & 16) !== 0) {
+      pushSym(
+        "vestibular",
+        "Mareo Ortostático / Vértigo Vestibular",
+        "Desorientación neurovestibular activa · Indicar bandas en muslos e hidratación",
+        "ear",
+        1,
+        "sym-overlay-vestibular",
+        2
+      );
+    }
+
+    /* 4. Sueño / Estrés / Fatiga Cognitiva */
+    const cogDelta = (latest.cognitivo_ms || 260) - (b.cognitivo_base_ms || 260);
+    if (latest.sueno_horas < 6.0 || latest.estres >= 7 || cogDelta >= 60 || latest.cohesion_equipo <= 2 || sysStatus[5] > 0) {
+      const sev = latest.sueno_horas < 5.0 || latest.estres >= 8 || sysStatus[5] >= 2 ? 2 : 1;
+      pushSym(
+        "sleep",
+        "Fatiga Conductual / Privación de Sueño",
+        `Sueño ${latest.sueno_horas.toFixed(1)} h · Estrés ${latest.estres}/10 · Reflejos ${latest.cognitivo_ms.toFixed(0)} ms`,
+        "brain",
+        5,
+        "sym-overlay-sleep",
+        sev
+      );
+    }
+
+    /* 5. Respiratorio / Hipoxia / O2-CO2 */
+    if (latest.spo2 < 95.0 || sysStatus[2] > 0) {
+      pushSym(
+        "respiratory",
+        latest.spo2 < 92.0 ? "Hipoxia / Disnea Respiratoria" : "Desaturación Respiratoria Leve",
+        `SpO₂ ${latest.spo2.toFixed(1)}% (base ${(b.spo2_base || 98).toFixed(1)}%)`,
+        "lungs",
+        2,
+        "sym-overlay-respiratory",
+        latest.spo2 < 92.0 || sysStatus[2] >= 2 ? 2 : 1
+      );
+    }
+
+    /* 6. Cardiovascular (FC / PA / Hidratacion) */
+    const fcDelta = Math.abs((latest.fc || 70) - (b.fc_base || 70));
+    if (latest.fc >= 100 || latest.fc <= 48 || latest.pa_sis >= 145 || latest.pa_sis <= 90 || fcDelta >= 25 || sysStatus[0] > 0) {
+      pushSym(
+        "cardio",
+        latest.fc >= 100 || fcDelta >= 25 ? "Taquicardia / Sobrecarga Cardíaca" : "Alteración Hemodinámica",
+        `FC ${latest.fc.toFixed(0)} lpm · PA ${latest.pa_sis.toFixed(0)}/${latest.pa_dia.toFixed(0)} mmHg`,
+        "heart",
+        0,
+        "sym-overlay-cardio",
+        latest.fc >= 120 || latest.pa_sis >= 160 || latest.pa_sis <= 85 || sysStatus[0] >= 2 ? 2 : 1
+      );
+    }
+
+    /* 7. Dolor Articular Post-EVA (bit 8) y Musculoesquelético */
+    if ((flags & 8) !== 0) {
+      pushSym(
+        "joints",
+        "Dolor Articular Post-EVA",
+        "Artralgia en hombros, codos o rodillas · Evaluar descompresión (DCS)",
+        "joint",
+        3,
+        "sym-overlay-joints",
+        2
+      );
+    } else if (latest.ejercicio_min < Math.round((b.ejercicio_objetivo_min || 90) * 0.6) || sysStatus[3] > 0) {
+      pushSym(
+        "bone",
+        "Déficit Osteomuscular",
+        `Ejercicio ${latest.ejercicio_min} min (meta ${b.ejercicio_objetivo_min || 90} min) · Riesgo óseo/muscular`,
+        "bone",
+        3,
+        "sym-overlay-joints",
+        sysStatus[3] >= 2 ? 2 : 1
+      );
+    }
+
+    /* 8. Sarpullido / Alergia Cutánea (bit 1) */
+    if ((flags & 1) !== 0) {
+      pushSym(
+        "rash",
+        "Sarpullido / Dermatitis de Contacto",
+        "Lesiones cutáneas activas en antebrazo o torso",
+        "skin",
+        4,
+        "sym-overlay-rash",
+        1
+      );
+    }
+
+    /* 9. Infeccion / Fiebre / Reactivacion Viral / Glucemia (bits 2, 4, temp, glucosa, apetito) */
+    const hasInfection = (flags & 4) !== 0;
+    const hasViral = (flags & 2) !== 0;
+    const fever = latest.temp_c >= 37.6 || latest.temp_c <= 35.5;
+    const glucAbn = latest.glucosa_mg_dl >= 145 || latest.glucosa_mg_dl <= 68;
+    const lowAppetite = latest.apetito_comida <= 2;
+    if (hasInfection || hasViral || fever || glucAbn || lowAppetite || sysStatus[4] > 0) {
+      const parts = [];
+      if (hasInfection) parts.push("Signos de infección");
+      if (hasViral) parts.push("Reactivación viral");
+      if (fever) parts.push(`Temp ${latest.temp_c.toFixed(1)} °C`);
+      if (glucAbn) parts.push(`Glucemia ${latest.glucosa_mg_dl.toFixed(0)} mg/dL`);
+      if (lowAppetite) parts.push(`Apetito ${latest.apetito_comida}/5`);
+      pushSym(
+        "immune",
+        hasInfection || fever ? "Respuesta Inmune / Estado Febril" : "Alteración Metabólica / Viral",
+        parts.length > 0 ? parts.join(" · ") : "Desajuste inmunometabólico registrado",
+        "stomach",
+        4,
+        "sym-overlay-immune",
+        hasInfection || latest.temp_c >= 38.3 || sysStatus[4] >= 2 ? 2 : 1
+      );
+    }
+
+    /* 10. Salud Hormonal Femenina / Cólico Pélvico */
+    if (isFem && ((latest.colico_menstrual || 0) >= 4 || (latest.flujo_menstrual || 0) >= 3)) {
+      pushSym(
+        "pelvic",
+        "Cólico Menstrual / Dolor Pélvico",
+        `Dismenorrea ${latest.colico_menstrual || 0}/10 · Flujo nivel ${latest.flujo_menstrual || 0}/3`,
+        "pelvis",
+        4,
+        "sym-overlay-pelvic",
+        (latest.colico_menstrual || 0) >= 7 || (latest.flujo_menstrual || 0) >= 3 ? 2 : 1
+      );
+    }
+  }
+
+  /* 11. Radiacion Acumulada / Evento Solar */
+  if (totalRad >= 400 || (a.radiacion_mision_msv || 0) >= 20 || sysStatus[6] > 0) {
+    pushSym(
+      "radiation",
+      totalRad >= 600 ? "Sobreexposición a Radiación (Límite Superado)" : "Exposición Acumulada a Radiación",
+      `${totalRad.toFixed(1)} / 600 mSv acumulados`,
+      "dna",
+      6,
+      "sym-overlay-radiation",
+      totalRad >= 600 || sysStatus[6] >= 2 ? 2 : 1
+    );
+  }
+
+  /* Respaldo desde alertas generadas por el motor si ningun campo disparo */
+  if (symptoms.length === 0 && Array.isArray(rep.alerts)) {
+    rep.alerts.forEach((al, idx) => {
+      const msg = `${al.title || ""} ${al.explanation || ""}`.toLowerCase();
+      let organ = "heart";
+      let sysIdx = 0;
+      let overlayId = "sym-overlay-cardio";
+      if (msg.includes("ojo") || msg.includes("visual") || msg.includes("sans")) {
+        organ = "eye"; sysIdx = 1; overlayId = "sym-overlay-vision";
+      } else if (msg.includes("cefalea") || msg.includes("cabeza")) {
+        organ = "head"; sysIdx = 1; overlayId = "sym-overlay-headache";
+      } else if (msg.includes("mareo") || msg.includes("vestibular")) {
+        organ = "ear"; sysIdx = 1; overlayId = "sym-overlay-vestibular";
+      } else if (msg.includes("spo2") || msg.includes("hipox") || msg.includes("resp") || msg.includes("co2")) {
+        organ = "lungs"; sysIdx = 2; overlayId = "sym-overlay-respiratory";
+      } else if (msg.includes("articul")) {
+        organ = "joint"; sysIdx = 3; overlayId = "sym-overlay-joints";
+      } else if (msg.includes("óseo") || msg.includes("ejerc") || msg.includes("muscul")) {
+        organ = "bone"; sysIdx = 3; overlayId = "sym-overlay-joints";
+      } else if (msg.includes("sarpullido") || msg.includes("piel") || msg.includes("alerg")) {
+        organ = "skin"; sysIdx = 4; overlayId = "sym-overlay-rash";
+      } else if (msg.includes("menstru") || msg.includes("cólico") || msg.includes("hierro")) {
+        organ = "pelvis"; sysIdx = 4; overlayId = "sym-overlay-pelvic";
+      } else if (msg.includes("sueño") || msg.includes("estrés") || msg.includes("cognit")) {
+        organ = "brain"; sysIdx = 5; overlayId = "sym-overlay-sleep";
+      } else if (msg.includes("radiaci") || msg.includes("msv")) {
+        organ = "dna"; sysIdx = 6; overlayId = "sym-overlay-radiation";
+      } else if (msg.includes("inmun") || msg.includes("temp") || msg.includes("gluc") || msg.includes("viral")) {
+        organ = "stomach"; sysIdx = 4; overlayId = "sym-overlay-immune";
+      }
+      pushSym(
+        `alert_${idx}`,
+        al.title || "Hallazgo Clínico",
+        al.explanation || "Evaluar parámetro clínico",
+        organ,
+        sysIdx,
+        overlayId,
+        al.severity || 1
+      );
+    });
+  }
+
+  /* Orden clinico: mayor severidad primero, luego orden anatomico */
+  const anatomicalOrder = {
+    head: 1, eye: 2, ear: 3, brain: 4, lungs: 5, heart: 6,
+    stomach: 7, skin: 8, joint: 9, bone: 10, pelvis: 11, dna: 12
+  };
+  symptoms.sort((x, y) => {
+    if ((y.sev || 0) !== (x.sev || 0)) return (y.sev || 0) - (x.sev || 0);
+    return (anatomicalOrder[x.organ] || 99) - (anatomicalOrder[y.organ] || 99);
+  });
+  return symptoms;
+}
+
+function highlightBodySystem(sysIdx, overlayId = null) {
   activeHighlightedSys = sysIdx;
+  activeHighlightedOverlay = overlayId;
   document.querySelectorAll("#body-map-svg .body-zone").forEach((el) => {
     const zSys = parseInt(el.getAttribute("data-sys") || "-1", 10);
     el.classList.toggle("zone-active", sysIdx !== null && zSys === sysIdx);
     el.classList.toggle("zone-dim", sysIdx !== null && zSys !== sysIdx);
   });
+  document.querySelectorAll("#body-map-svg .sym-overlay").forEach((el) => {
+    el.classList.toggle("sym-overlay-focus", overlayId !== null && el.id === overlayId);
+  });
   document.querySelectorAll("#system-legend-list .sys-legend-item").forEach((el) => {
     const lSys = parseInt(el.getAttribute("data-sys") || "-1", 10);
     el.classList.toggle("legend-active", sysIdx !== null && lSys === sysIdx);
   });
+  document.querySelectorAll("#body-symptom-list .body-symptom-item").forEach((el) => {
+    const sOvr = el.getAttribute("data-overlay") || "";
+    const sSys = parseInt(el.getAttribute("data-sys") || "-1", 10);
+    const match = (overlayId !== null && sOvr === overlayId) || (overlayId === null && sysIdx !== null && sSys === sysIdx);
+    el.classList.toggle("symptom-active", match);
+  });
+}
+
+function highlightBodySymptom(sysIdx, overlayId) {
+  highlightBodySystem(sysIdx, overlayId);
+}
+
+function clearSelectedBodyPart() {
+  selectedBodyPartKey = null;
+  highlightBodySystem(null);
+  document.querySelectorAll("#body-map-svg .body-part-clickable").forEach((el) => {
+    el.classList.remove("part-selected");
+  });
+  const box = document.getElementById("body-part-detail-box");
+  if (box) {
+    box.classList.add("hidden");
+    box.innerHTML = "";
+  }
+}
+
+function getBodyPartClinicalInfo(a, latest, rep, partKey) {
+  const sysStatus = rep.system_status || [0, 0, 0, 0, 0, 0, 0];
+  const b = a.baseline || {};
+  const isFem = (a.sexo || "M").toUpperCase() === "F";
+  const totalRad = (a.radiacion_previa_msv || 0) + (a.radiacion_mision_msv || 0);
+  const flags = latest ? latest.sintomas_flags || 0 : 0;
+  const activeSymptoms = extractActiveBodySymptoms(a, latest, rep);
+
+  const filterSymptoms = (ids) => activeSymptoms.filter((s) => ids.includes(s.id));
+
+  const catalog = {
+    head: {
+      title: "Cabeza y Cráneo",
+      organ: "head",
+      sysIdx: 1,
+      st: Math.max(sysStatus[1] || 0, sysStatus[5] || 0, (latest && latest.dolor_cabeza >= 7) ? 2 : (latest && latest.dolor_cabeza >= 4) ? 1 : 0),
+      metrics: latest
+        ? `Cefalea: ${latest.dolor_cabeza}/10 · Mareo vestibular: ${latest.mareo_vestibular}/10 · Visión: ${latest.vision_actual.toFixed(2)}`
+        : "Sin muestras recientes",
+      note: "Evalúa cefalea por desplazamiento cefálico de fluidos o hipercapnia, vértigo vestibular y presión neuro-ocular.",
+      syms: filterSymptoms(["headache", "vestibular", "vision", "sleep"])
+    },
+    brain: {
+      title: "Cerebro, Sueño y Conducta",
+      organ: "brain",
+      sysIdx: 5,
+      st: sysStatus[5] || 0,
+      metrics: latest
+        ? `Sueño: ${latest.sueno_horas.toFixed(1)} h (meta ${(b.sueno_base_h || 7.5).toFixed(1)} h) · Estrés: ${latest.estres}/10 · Reflejos: ${latest.cognitivo_ms.toFixed(0)} ms`
+        : "Sin muestras recientes",
+      note: "Monitorea deuda de sueño, tiempo de reacción psicomotora, estado de ánimo y cohesión del equipo.",
+      syms: filterSymptoms(["sleep", "headache"])
+    },
+    eyes: {
+      title: "Ojos y Sistema Neuro-Ocular (SANS)",
+      organ: "eye",
+      sysIdx: 1,
+      st: sysStatus[1] || 0,
+      metrics: latest
+        ? `Agudeza visual: ${latest.vision_actual.toFixed(2)} (base ${(b.vision_base || 1.0).toFixed(2)}) · PA Sistólica: ${latest.pa_sis.toFixed(0)} mmHg`
+        : "Sin muestras recientes",
+      note: "Vigila cambios visuales o presión del nervio óptico por microgravedad; indicar bandas en muslos y Complejo B ante alerta.",
+      syms: filterSymptoms(["vision", "headache"])
+    },
+    neck: {
+      title: "Cuello y Vías Superiores",
+      organ: "stomach",
+      sysIdx: 4,
+      st: Math.max(sysStatus[4] || 0, ((flags & 4) !== 0 || (latest && latest.temp_c >= 37.8)) ? 1 : 0),
+      metrics: latest
+        ? `Temp: ${latest.temp_c.toFixed(1)} °C · Signos infecciosos: ${(flags & 4) !== 0 ? "Activos" : "Ninguno"}`
+        : "Sin muestras recientes",
+      note: "Control de drenaje venoso yugular en microgravedad, adenopatías o signos de infección respiratoria alta.",
+      syms: filterSymptoms(["immune", "respiratory"])
+    },
+    chest: {
+      title: "Tórax y Cavidad Torácica",
+      organ: "lungs",
+      sysIdx: 2,
+      st: Math.max(sysStatus[2] || 0, sysStatus[0] || 0),
+      metrics: latest
+        ? `SpO₂: ${latest.spo2.toFixed(1)}% · FC: ${latest.fc.toFixed(0)} lpm · Pre-respiración O₂: ${latest.pre_resp_o2_min} min`
+        : "Sin muestras recientes",
+      note: "Integra la mecánica ventilatoria de cabina, saturación arterial y retorno venoso central.",
+      syms: filterSymptoms(["respiratory", "cardio"])
+    },
+    lungs: {
+      title: "Pulmones y Sistema Respiratorio / EVA",
+      organ: "lungs",
+      sysIdx: 2,
+      st: sysStatus[2] || 0,
+      metrics: latest
+        ? `SpO₂: ${latest.spo2.toFixed(1)}% (base ${(b.spo2_base || 98).toFixed(1)}%) · EVA hoy: ${latest.tuvo_eva ? "Sí" : "No"}`
+        : "Sin muestras recientes",
+      note: "Evalúa intercambio gaseoso, riesgo de hipoxia o hipercapnia por CO₂ y prevención de enfermedad descompresiva.",
+      syms: filterSymptoms(["respiratory"])
+    },
+    heart: {
+      title: "Corazón y Sistema Cardiovascular",
+      organ: "heart",
+      sysIdx: 0,
+      st: sysStatus[0] || 0,
+      metrics: latest
+        ? `FC: ${latest.fc.toFixed(0)} lpm (base ${(b.fc_base || 70).toFixed(0)}) · PA: ${latest.pa_sis.toFixed(0)}/${latest.pa_dia.toFixed(0)} mmHg · Hidratación: ${latest.hidratacion_ml} ml`
+        : "Sin muestras recientes",
+      note: "Encapsulado dentro de la cavidad pulmonar; controla estabilidad hemodinámica, ortostatismo y volemia.",
+      syms: filterSymptoms(["cardio", "vestibular"])
+    },
+    abdomen: {
+      title: "Abdomen y Estado Metabólico",
+      organ: "stomach",
+      sysIdx: 4,
+      st: sysStatus[4] || 0,
+      metrics: latest
+        ? `Glucemia: ${latest.glucosa_mg_dl.toFixed(0)} mg/dL · Calorías: ${latest.calorias_kcal} kcal · Apetito: ${latest.apetito_comida}/5`
+        : "Sin muestras recientes",
+      note: "Control de tolerancia nutricional, glucemia basal, hidratación y estado metabólico general.",
+      syms: filterSymptoms(["immune"])
+    },
+    stomach: {
+      title: "Estómago, Inmunidad y Metabolismo",
+      organ: "stomach",
+      sysIdx: 4,
+      st: sysStatus[4] || 0,
+      metrics: latest
+        ? `Temp: ${latest.temp_c.toFixed(1)} °C · Glucemia: ${latest.glucosa_mg_dl.toFixed(0)} mg/dL · Apetito: ${latest.apetito_comida}/5`
+        : "Sin muestras recientes",
+      note: "Detecta reactivación viral, fiebre, signos de infección, desbalance glucémico y aceptabilidad del menú.",
+      syms: filterSymptoms(["immune", "rash"])
+    },
+    pelvis: {
+      title: isFem ? "Pelvis, Cadera y Salud Hormonal Femenina" : "Pelvis, Cadera y Estabilidad Axial",
+      organ: "pelvis",
+      sysIdx: 4,
+      st: isFem && latest && (latest.colico_menstrual >= 7 || latest.flujo_menstrual === 3)
+        ? 2
+        : isFem && latest && (latest.colico_menstrual >= 4 || latest.flujo_menstrual >= 2 || (latest.fase_ciclo === 1 && !latest.suplemento_hierro))
+        ? 1
+        : (sysStatus[3] || 0),
+      metrics: isFem && latest
+        ? `Ciclo: ${CYCLE_PHASE_NAMES[latest.fase_ciclo || 0] || "No Aplica"} (Día ${latest.dia_ciclo || 0}) · Cólico: ${latest.colico_menstrual || 0}/10 · Hierro: ${latest.suplemento_hierro ? "Activo" : "Pendiente"}`
+        : latest
+        ? `Ejercicio de carga: ${latest.ejercicio_min} min (meta ${b.ejercicio_objetivo_min || 90} min) · Densidad ósea base: ${(b.densidad_osea_base_pct || 100).toFixed(0)}%`
+        : "Sin muestras recientes",
+      note: isFem
+        ? "Control de salud menstrual, suplementación de hierro y estabilidad ósea pélvica en microgravedad."
+        : "Control de transferencia de carga pélvica durante ejercicios de resistencia y prevención de descalcificación ósea.",
+      syms: filterSymptoms(["pelvic", "joints", "bone"])
+    },
+    arms: {
+      title: "Extremidades Superiores y Piel",
+      organ: (flags & 1) ? "skin" : "joint",
+      sysIdx: 3,
+      st: Math.max(sysStatus[3] || 0, (flags & 1) ? 1 : 0, (flags & 8) ? 2 : 0),
+      metrics: latest
+        ? `Ejercicio diario: ${latest.ejercicio_min} min · Dolor post-EVA: ${(flags & 8) ? "Sí" : "No"} · Sarpullido: ${(flags & 1) ? "Activo" : "No"}`
+        : "Sin muestras recientes",
+      note: "Vigilancia articular de hombros, codos y muñecas tras actividades extravehiculares y dermatitis de contacto.",
+      syms: filterSymptoms(["joints", "bone", "rash"])
+    },
+    legs: {
+      title: "Extremidades Inferiores (Muslos, Rodillas y Pies)",
+      organ: "bone",
+      sysIdx: 3,
+      st: sysStatus[3] || 0,
+      metrics: latest
+        ? `Ejercicio: ${latest.ejercicio_min} min (meta ${b.ejercicio_objetivo_min || 90} min) · Banda en muslos: ${(flags & 32) ? "Activa" : "Inactiva"}`
+        : "Sin muestras recientes",
+      note: "Preservación muscular y ósea de miembros inferiores, prevención de estasis venosa y control articular.",
+      syms: filterSymptoms(["joints", "bone"])
+    },
+    radiation: {
+      title: "Campo de Exposición y Dosimetría",
+      organ: "dna",
+      sysIdx: 6,
+      st: sysStatus[6] || 0,
+      metrics: `Acumulado carrera: ${totalRad.toFixed(1)} / 600 mSv · Misión actual: ${(a.radiacion_mision_msv || 0).toFixed(2)} mSv${latest ? ` · Dosis día: ${latest.dosis_dia_msv.toFixed(2)} mSv` : ""}`,
+      note: "Monitorea dosis diaria, tormentas de partículas solares y acercamiento al límite ocupacional de 600 mSv.",
+      syms: filterSymptoms(["radiation"])
+    }
+  };
+
+  return catalog[partKey] || null;
+}
+
+function renderBodyPartDetailBox(a, partKey, shouldScroll = false) {
+  const box = document.getElementById("body-part-detail-box");
+  if (!box || !a || !partKey) return;
+  const rep = a.report || {};
+  const hist = a.history || [];
+  const latest = hist.length > 0 ? hist[hist.length - 1] : null;
+  const info = getBodyPartClinicalInfo(a, latest, rep, partKey);
+  if (!info) return;
+
+  const colorMap = ["#00ff66", "#ffd000", "#ff2a4b"];
+  const labelMap = ["NORMAL", "PRECAUCIÓN", "CRÍTICO"];
+  const st = Math.min(2, Math.max(0, info.st || 0));
+  const stColor = colorMap[st];
+  const stCls = st === 2 ? "part-critical" : st === 1 ? "part-caution" : "part-ok";
+
+  document.querySelectorAll("#body-map-svg .body-part-clickable").forEach((el) => {
+    el.classList.toggle("part-selected", el.getAttribute("data-part") === partKey);
+  });
+
+  const symsHtml = info.syms.length > 0
+    ? `<div class="body-part-syms">
+        ${info.syms
+          .map(
+            (s) => `<span class="body-part-sym-pill" style="border-color:${s.sev >= 2 ? "#ff2a4b" : "#ffd000"}; color:${s.sev >= 2 ? "#ff8da1" : "#ffe57f"};">
+              ${escapeHtml(s.title)}
+            </span>`
+          )
+          .join("")}
+      </div>`
+    : `<div class="body-part-no-sym">✓ Sin síntomas activos localizados en esta zona</div>`;
+
+  box.className = `body-part-detail-box ${stCls}`;
+  box.innerHTML = `
+    <div class="body-part-detail-header">
+      <div class="body-part-title-wrap">
+        <span class="organ-icon-box" style="color:${stColor};">${getMinimalistOrganIconSvg(info.organ)}</span>
+        <div>
+          <strong>${escapeHtml(info.title)}</strong>
+          <span class="body-part-status-pill" style="color:${stColor}; border-color:${stColor};">${labelMap[st]}</span>
+        </div>
+      </div>
+      <button type="button" class="body-part-close-btn" onclick="clearSelectedBodyPart()" title="Cerrar detalle de parte corporal">×</button>
+    </div>
+    <div class="body-part-metrics">${escapeHtml(info.metrics)}</div>
+    <div class="body-part-note">${escapeHtml(info.note)}</div>
+    ${symsHtml}
+  `;
+
+  if (shouldScroll) {
+    box.classList.remove("part-flash");
+    void box.offsetWidth;
+    box.classList.add("part-flash");
+    box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+function inspectBodyPart(partKey, shouldScroll = true) {
+  if (!partKey || !currentAstronautDetail) return;
+  selectedBodyPartKey = partKey;
+  const targetEl = document.querySelector(`#body-map-svg [data-part="${partKey}"]`);
+  const sysIdx = targetEl ? parseInt(targetEl.getAttribute("data-sys") || "-1", 10) : null;
+  if (sysIdx !== null && !Number.isNaN(sysIdx) && sysIdx >= 0) {
+    highlightBodySystem(sysIdx);
+  }
+  renderBodyPartDetailBox(currentAstronautDetail, partKey, shouldScroll);
 }
 
 function setupBodyMapInteractions() {
@@ -737,39 +1246,47 @@ function setupBodyMapInteractions() {
   svg._bound = true;
   svg.querySelectorAll(".body-zone").forEach((zone) => {
     const sysIdx = parseInt(zone.getAttribute("data-sys") || "-1", 10);
+    const partKey = zone.getAttribute("data-part") || "";
     zone.addEventListener("mouseenter", () => highlightBodySystem(sysIdx));
-    zone.addEventListener("mouseleave", () => highlightBodySystem(null));
-    zone.addEventListener("click", () => {
-      highlightBodySystem(activeHighlightedSys === sysIdx ? null : sysIdx);
+    zone.addEventListener("mouseleave", () => {
+      if (selectedBodyPartKey) {
+        const selEl = svg.querySelector(`[data-part="${selectedBodyPartKey}"]`);
+        const selSys = selEl ? parseInt(selEl.getAttribute("data-sys") || "-1", 10) : null;
+        highlightBodySystem(selSys !== null && !Number.isNaN(selSys) ? selSys : null);
+      } else {
+        highlightBodySystem(null);
+      }
+    });
+    zone.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (partKey) {
+        inspectBodyPart(partKey, true);
+      } else {
+        highlightBodySystem(activeHighlightedSys === sysIdx ? null : sysIdx);
+      }
     });
   });
 }
 
 async function selectAstronautCard(astronautId) {
-  if (isPriorityMode && !priorityAstronautIds.has(astronautId)) {
-    showToast("Prioridad Médica Total: atiende primero al tripulante en estado Muy Crítico.", true);
-    return;
-  }
   if (astronautId !== currentAstronautId) {
     setDetailStatsExpanded(false);
+    clearSelectedBodyPart();
   }
   currentAstronautId = astronautId;
+  updateMostrarLayoutVisibility();
   await loadAstronautDetail(astronautId, true);
 }
 
 function closeAstronautDetail() {
-  if (isPriorityMode && currentAstronautId && priorityAstronautIds.has(currentAstronautId)) {
-    showToast("No puedes cerrar la ficha mientras exista un paciente Muy Crítico activo.", true);
-    return;
-  }
   currentAstronautId = null;
   currentAstronautDetail = null;
   setDetailStatsExpanded(false);
+  clearSelectedBodyPart();
   const panel = document.getElementById("astronaut-detail-panel");
   if (panel) panel.classList.add("hidden");
-  if (currentMissionData) {
-    renderCrewGrid(currentMissionData.crew || []);
-  }
+  updateMostrarLayoutVisibility();
+  renderCrewGrid(allCrewList);
 }
 
 async function loadAstronautDetail(astronautId, scrollIntoView = false) {
@@ -786,12 +1303,10 @@ async function loadAstronautDetail(astronautId, scrollIntoView = false) {
     }
 
     renderAstronautDetailPanel(astro);
+    updateMostrarLayoutVisibility();
 
     if (panel && scrollIntoView) {
-      panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-    if (scrollIntoView && currentMissionData) {
-      renderCrewGrid(currentMissionData.crew || []);
+      panel.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   } catch (err) {
     console.error("Error cargando detalle de astronauta:", err);
@@ -811,10 +1326,7 @@ function renderAstronautDetailPanel(a) {
   document.getElementById("detail-avatar").src = resolveAvatarUrl(a.avatar);
   document.getElementById("detail-id-badge").textContent = a.id;
   document.getElementById("detail-name").textContent = a.nombre;
-  const missionDisplay = (currentMissionData && currentMissionData.id === a.mission_id && currentMissionData.nombre)
-    ? currentMissionData.nombre
-    : a.mission_id;
-  document.getElementById("detail-role").textContent = `${a.rol} · Misión: ${missionDisplay}`;
+  document.getElementById("detail-role").textContent = a.rol || "";
 
   const isFem = (a.sexo || "M").toUpperCase() === "F";
   const sexBadge = document.getElementById("detail-sex-badge");
@@ -825,54 +1337,138 @@ function renderAstronautDetailPanel(a) {
 
   const evaBadge = document.getElementById("detail-eva-badge");
   evaBadge.className = `eva-badge ${evaBadgeClass(rep.eva_aptitude)}`;
-  evaBadge.textContent = `EVA / PILOTAJE: ${rep.eva_aptitude_str || "GO"}`;
+  evaBadge.textContent = `Aptitud EVA: ${formatEvaAptitudeEs(rep.eva_aptitude, rep.eva_aptitude_str)}`;
 
   const autoTag = document.getElementById("detail-auto-tag");
   if (autoTag) {
     autoTag.classList.toggle("hidden", rep.autonomous_mode !== 1);
   }
 
-  const delBtn = document.getElementById("detail-delete-btn");
-  if (delBtn) delBtn.disabled = isPriorityMode && priorityAstronautIds.has(a.id);
   const closeBtn = document.getElementById("detail-close-btn");
-  if (closeBtn) closeBtn.disabled = isPriorityMode && priorityAstronautIds.has(a.id);
+  if (closeBtn) closeBtn.disabled = false;
 
   const heart = document.getElementById("detail-heart");
   heart.className = `heart-icon heart-${sev}`;
   document.getElementById("detail-score").textContent = `${rep.health_score ?? 100}%`;
-  document.getElementById("detail-summary-text").textContent = rep.resumen_estado || "Nominal";
+  document.getElementById("detail-summary-text").textContent = rep.resumen_estado || "Normal";
 
-  /* 1. Colorear Mapa Corporal de 7 Sistemas */
+  /* 1. Colorear Mapa Corporal Anatomico Segmentado, Corazon Encapsulado y Sintomas */
   const sysStatus = rep.system_status || [0, 0, 0, 0, 0, 0, 0];
   const colorMap = ["#00ff66", "#ffd000", "#ff2a4b"];
+  const heartColors = [
+    { fill: "#22c55e", stroke: "#052e16", capStroke: "#064e3b", capFill: "rgba(5, 46, 22, 0.56)" },
+    { fill: "#ffd000", stroke: "#713f12", capStroke: "#854d0e", capFill: "rgba(113, 63, 18, 0.48)" },
+    { fill: "#ff2a4b", stroke: "#7f1d1d", capStroke: "#991b1b", capFill: "rgba(127, 29, 29, 0.50)" }
+  ];
 
   const setSvgColor = (id, prop, statusIdx) => {
     const el = document.getElementById(id);
     if (el) el.setAttribute(prop, colorMap[sysStatus[statusIdx] || 0]);
   };
-  setSvgColor("svg-sys-0", "fill", 0);
-  setSvgColor("svg-sys-1", "fill", 1);
+  const setSelectorColor = (selector, prop, statusIdx) => {
+    const c = colorMap[sysStatus[statusIdx] || 0];
+    document.querySelectorAll(selector).forEach((el) => el.setAttribute(prop, c));
+  };
+
+  /* Corazon encapsulado dentro de los pulmones con borde verde mas oscuro */
+  const st0 = sysStatus[0] || 0;
+  const hc = heartColors[st0] || heartColors[0];
+  const heartCap = document.getElementById("svg-heart-capsule");
+  const heartShape = document.getElementById("svg-heart-shape");
+  if (heartCap) {
+    heartCap.setAttribute("stroke", hc.capStroke);
+    heartCap.setAttribute("fill", hc.capFill);
+  }
+  if (heartShape) {
+    heartShape.setAttribute("fill", hc.fill);
+    heartShape.setAttribute("stroke", hc.stroke);
+  }
+
+  setSelectorColor("#svg-sys-1 .eye-part", "fill", 1);
   setSvgColor("svg-sys-2-l", "fill", 2);
   setSvgColor("svg-sys-2-r", "fill", 2);
-  setSvgColor("svg-sys-3", "stroke", 3);
+  setSelectorColor("#svg-sys-3-arms .limb-seg", "stroke", 3);
+  setSelectorColor("#svg-sys-3-legs .limb-seg", "stroke", 3);
   setSvgColor("svg-sys-4", "fill", 4);
-  setSvgColor("svg-sys-5", "stroke", 5);
+  setSvgColor("svg-sys-5", "fill", 5);
   setSvgColor("svg-sys-6", "stroke", 6);
+
+  /* Expresiones graficas de sintomas particulares sobre el esquema humano */
+  const activeSymptoms = extractActiveBodySymptoms(a, latest, rep);
+  const activeOverlays = new Set(activeSymptoms.map((s) => s.overlayId));
+  document.querySelectorAll("#body-map-svg .sym-overlay").forEach((ov) => {
+    const isOn = activeOverlays.has(ov.id);
+    ov.classList.toggle("hidden", !isOn);
+    ov.classList.toggle("sym-overlay-active", isOn);
+  });
+
+  const symptomList = document.getElementById("body-symptom-list");
+  if (symptomList) {
+    if (activeSymptoms.length === 0) {
+      symptomList.innerHTML = `<div class="body-symptom-item symptom-normal">
+        <span class="organ-icon-box" style="color:#00ff66;">${getMinimalistOrganIconSvg("heart")}</span>
+        <div class="symptom-item-text">
+          <strong>Sin síntomas agudos expresados</strong>
+          <span>Órganos y segmentos anatómicos en rango normal</span>
+        </div>
+        <strong class="symptom-sev-tag" style="color:#00ff66;">NORMAL</strong>
+      </div>`;
+    } else {
+      symptomList.innerHTML = activeSymptoms
+        .map((s) => {
+          const stColor = s.sev >= 2 ? "#ff2a4b" : "#ffd000";
+          const sevCls = s.sev >= 2 ? "sym-critical" : "sym-caution";
+          const sevTxt = s.sev >= 2 ? "CRÍTICO" : "PRECAUCIÓN";
+          return `<div class="body-symptom-item ${sevCls}" data-sys="${s.sysIdx}" data-overlay="${escapeHtml(s.overlayId)}"
+                       onmouseenter="highlightBodySymptom(${s.sysIdx}, '${escapeHtml(s.overlayId)}')"
+                       onmouseleave="highlightBodySystem(null)"
+                       onclick="highlightBodySymptom(${s.sysIdx}, '${escapeHtml(s.overlayId)}')">
+            <span class="organ-icon-box" style="color:${stColor};">${getMinimalistOrganIconSvg(s.organ)}</span>
+            <div class="symptom-item-text">
+              <strong>${escapeHtml(s.title)}</strong>
+              <span>${escapeHtml(s.detail)}</span>
+            </div>
+            <strong class="symptom-sev-tag" style="color:${stColor};">${sevTxt}</strong>
+          </div>`;
+        })
+        .join("");
+    }
+  }
+
+  /* Leyenda ordenada de sistemas con icono minimalista monocromo */
+  const systemOrganMap = ["heart", "eye", "lungs", "joint", "stomach", "brain", "dna"];
+  const systemPartMap = ["heart", "eyes", "lungs", "legs", "stomach", "brain", "radiation"];
+  const systemOrder = SYSTEM_NAMES.map((name, idx) => ({
+    name,
+    idx,
+    st: sysStatus[idx] || 0,
+    organ: systemOrganMap[idx] || "heart",
+    part: systemPartMap[idx] || "heart"
+  })).sort((x, y) => (y.st !== x.st ? y.st - x.st : x.idx - y.idx));
 
   const legendList = document.getElementById("system-legend-list");
   if (legendList) {
-    legendList.innerHTML = SYSTEM_NAMES.map((name, idx) => {
-      const st = sysStatus[idx] || 0;
-      const cls = st === 2 ? "sys-critical" : st === 1 ? "sys-caution" : "";
-      const label = st === 2 ? "CRÍTICO" : st === 1 ? "PRECAUCIÓN" : "OK";
-      return `<div class="sys-legend-item ${cls}" data-sys="${idx}"
-                   onmouseenter="highlightBodySystem(${idx})"
-                   onmouseleave="highlightBodySystem(null)"
-                   onclick="highlightBodySystem(${idx})">
-        <span>${escapeHtml(name)}</span>
-        <strong style="color:${colorMap[st]}">${label}</strong>
-      </div>`;
-    }).join("");
+    legendList.innerHTML = systemOrder
+      .map(({ name, idx, st, organ, part }) => {
+        const cls = st === 2 ? "sys-critical" : st === 1 ? "sys-caution" : "";
+        const label = st === 2 ? "CRÍTICO" : st === 1 ? "PRECAUCIÓN" : "NORMAL";
+        const iconColor = colorMap[st];
+        return `<div class="sys-legend-item ${cls}" data-sys="${idx}"
+                     onmouseenter="highlightBodySystem(${idx})"
+                     onmouseleave="highlightBodySystem(null)"
+                     onclick="inspectBodyPart('${part}', true)">
+          <span class="sys-legend-left">
+            <span class="organ-icon-box organ-icon-sm" style="color:${iconColor};">${getMinimalistOrganIconSvg(organ)}</span>
+            <span>${escapeHtml(name)}</span>
+          </span>
+          <strong style="color:${iconColor}">${label}</strong>
+        </div>`;
+      })
+      .join("");
+  }
+
+  if (selectedBodyPartKey) {
+    renderBodyPartDetailBox(a, selectedBodyPartKey, false);
   }
 
   /* 2. Signos Vitales vs Referencia Basal Personal (dentro de #detail-stats-panel) */
@@ -881,7 +1477,7 @@ function renderAstronautDetailPanel(a) {
     if (!latest) {
       vitalsGrid.innerHTML = `<div class="vital-tile" style="grid-column: 1 / -1; text-align:center;">
         <span class="vital-label">Sin muestras clínicas registradas</span>
-        <span class="vital-delta">Usa Check-in Rápido para ingresar los primeros signos vitales.</span>
+        <span class="vital-delta">Usa Opciones → Cargar → Control Diario para ingresar los primeros signos vitales.</span>
       </div>`;
     } else {
       const formatDelta = (curr, base, unit, decimals = 1) => {
@@ -949,7 +1545,7 @@ function renderAstronautDetailPanel(a) {
   const totalRad = (a.radiacion_previa_msv || 0) + (a.radiacion_mision_msv || 0);
   const radPct = Math.min(100, Math.max(0, (totalRad / 600.0) * 100));
   document.getElementById("detail-rad-text").textContent =
-    `${totalRad.toFixed(1)} / 600 mSv (Misión: ${(a.radiacion_mision_msv || 0).toFixed(2)} mSv)`;
+    `${totalRad.toFixed(1)} / 600 mSv (Reciente: ${(a.radiacion_mision_msv || 0).toFixed(2)} mSv)`;
   const radFill = document.getElementById("detail-rad-fill");
   if (radFill) {
     radFill.style.width = `${radPct.toFixed(1)}%`;
@@ -957,16 +1553,39 @@ function renderAstronautDetailPanel(a) {
       totalRad >= 600 ? "#ff2a4b" : totalRad >= 480 ? "#ffd000" : "#00ff66";
   }
 
-  /* Estado de botones 1-clic de contramedidas */
+  /* Estado de botones 1-clic de contramedidas y resumen de actuacion */
   const flags = latest ? latest.sintomas_flags || 0 : 0;
   const setChip = (id, mask) => {
     const btn = document.getElementById(id);
-    if (btn) btn.classList.toggle("active", (flags & mask) !== 0);
+    if (!btn) return;
+    const isActive = (flags & mask) !== 0;
+    btn.classList.toggle("active", isActive);
+    const pill = btn.querySelector(".cm-state-pill");
+    if (pill) pill.textContent = isActive ? "ACTIVA" : "INACTIVA";
   };
   setChip("cm-btn-cuff", 32);
   setChip("cm-btn-bcomp", 64);
   setChip("cm-btn-vitd", 128);
   setChip("cm-btn-veggie", 256);
+
+  const cmSummaryList = document.getElementById("cm-action-summary-list");
+  if (cmSummaryList) {
+    const appliedCm = COUNTERMEASURE_GUIDANCE.filter((g) => (flags & g.mask) !== 0);
+    if (appliedCm.length === 0) {
+      cmSummaryList.innerHTML = `<div class="cm-summary-empty">
+        Activa cualquiera de las contramedidas superiores para ver aquí el resumen breve de cómo actuar.
+      </div>`;
+    } else {
+      cmSummaryList.innerHTML = appliedCm
+        .map(
+          (g) => `<div class="cm-summary-item">
+            <strong>✓ ${escapeHtml(g.title)}</strong>
+            <span>${escapeHtml(g.howToAct)}</span>
+          </div>`
+        )
+        .join("");
+    }
+  }
 
   /* Sub-panel de Fisiologia Hormonal: ESTRICTAMENTE solo para mujeres */
   const hormPanel = document.getElementById("detail-hormonal-panel");
@@ -976,6 +1595,7 @@ function renderAstronautDetailPanel(a) {
       const phaseBadge = document.getElementById("detail-cycle-phase-badge");
       const metricsBox = document.getElementById("detail-hormonal-metrics");
       const ironBtn = document.getElementById("cm-btn-iron");
+      const femSummary = document.getElementById("cm-fem-action-summary");
       if (latest) {
         const faseIdx = latest.fase_ciclo || 0;
         const faseName = CYCLE_PHASE_NAMES[faseIdx] || "No Aplica";
@@ -993,16 +1613,34 @@ function renderAstronautDetailPanel(a) {
             <div class="hormonal-mini-tile"><span>Suplemento Hierro (Fe)</span><strong style="color:${ironActive ? "#00ff66" : "#ffd000"}">${ironActive ? "ACTIVO" : "PENDIENTE"}</strong></div>
           `;
         }
-        if (ironBtn) ironBtn.classList.toggle("active", ironActive);
+        if (ironBtn) {
+          ironBtn.classList.toggle("active", ironActive);
+          const pill = ironBtn.querySelector(".cm-state-pill");
+          if (pill) pill.textContent = ironActive ? "ACTIVA" : "INACTIVA";
+        }
+        if (femSummary) {
+          femSummary.classList.toggle("hidden", !ironActive);
+          femSummary.innerHTML = ironActive
+            ? `<strong>✓ Cómo actuar (Hierro + Hidratación):</strong><span>Administrar hierro + ácido fólico/Complejo B con agua abundante (+350 ml), vigilar signos de mareo ortostático y reevaluar intensidad del flujo en el siguiente control.</span>`
+            : "";
+        }
       } else {
         if (phaseBadge) phaseBadge.textContent = "Sin registro";
         if (metricsBox) {
           metricsBox.innerHTML = `<div class="hormonal-mini-tile" style="grid-column:1 / -1;">
             <span>Registro Hormonal</span>
-            <strong>Pendiente de primer Check-in femenino</strong>
+            <strong>Pendiente del primer control femenino</strong>
           </div>`;
         }
-        if (ironBtn) ironBtn.classList.remove("active");
+        if (ironBtn) {
+          ironBtn.classList.remove("active");
+          const pill = ironBtn.querySelector(".cm-state-pill");
+          if (pill) pill.textContent = "INACTIVA";
+        }
+        if (femSummary) {
+          femSummary.classList.add("hidden");
+          femSummary.innerHTML = "";
+        }
       }
     } else {
       hormPanel.classList.add("hidden");
@@ -1011,17 +1649,17 @@ function renderAstronautDetailPanel(a) {
     }
   }
 
-  /* 3. Lista de Alertas y Contramedidas HRP */
+  /* 3. Lista de Alertas y Contramedidas */
   const alertsList = document.getElementById("detail-alerts-list");
   const alerts = rep.alerts || [];
   if (alertsList) {
     if (alerts.length === 0) {
       alertsList.innerHTML = `<div class="alert-item" style="border-left-color:#00ff66;">
         <div class="alert-header-row">
-          <span class="alert-title" style="color:#00ff66;">✓ Estado Fisiológico y Conductual Nominal</span>
-          <span class="alert-ref-tag">NASA HRP Standard Measures</span>
+          <span class="alert-title" style="color:#00ff66;">✓ Estado Fisiológico y Conductual Normal</span>
+          <span class="alert-ref-tag">Medidas Clínicas Estándar</span>
         </div>
-        <div class="alert-exp">Todos los parámetros vitales, dosimétricos, hormonales y conductuales se encuentran dentro de los márgenes nominales respecto a su referencia personal.</div>
+        <div class="alert-exp">Todos los parámetros vitales, dosimétricos, hormonales y conductuales se encuentran dentro de los márgenes normales respecto a su referencia personal.</div>
       </div>`;
     } else {
       alertsList.innerHTML = alerts
@@ -1035,7 +1673,7 @@ function renderAstronautDetailPanel(a) {
               <span class="alert-ref-tag">${escapeHtml(al.referencia_nasa)}</span>
             </div>
             <div class="alert-exp">${escapeHtml(al.explicacion)}</div>
-            <div class="alert-cm"><strong>Protocolo HRP:</strong> ${escapeHtml(al.contramedida)}</div>
+            <div class="alert-cm"><strong>Protocolo Clínico:</strong> ${escapeHtml(al.contramedida)}</div>
           </div>`;
         })
         .join("");
@@ -1196,9 +1834,9 @@ function drawTrendChart(canvasId, series, baselineValue, unit, strokeColor = "#0
   const firstDay = series[0].day;
   const lastDay = series[series.length - 1].day;
   const lastVal = series[series.length - 1].value;
-  ctx.fillText(`Sol ${firstDay}`, padL, H - 5);
+  ctx.fillText(`Día ${firstDay}`, padL, H - 5);
   ctx.fillText(
-    `Sol ${lastDay}: ${lastVal.toFixed(lastVal < 10 ? 2 : 1)} ${unit}`,
+    `Día ${lastDay}: ${lastVal.toFixed(lastVal < 10 ? 2 : 1)} ${unit}`,
     Math.max(padL + 55, W - padR - 115),
     H - 5
   );
@@ -1209,10 +1847,6 @@ function drawTrendChart(canvasId, series, baselineValue, unit, strokeColor = "#0
  * ========================================================================= */
 async function toggleQuickCountermeasure(bitMask) {
   if (!currentAstronautDetail) return;
-  if (isPriorityMode && !priorityAstronautIds.has(currentAstronautDetail.id)) {
-    showToast("Prioridad Médica Total activa: atiende al tripulante en estado Muy Crítico.", true);
-    return;
-  }
   const hist = currentAstronautDetail.history || [];
   const latest = hist.length > 0 ? hist[hist.length - 1] : null;
   const currentFlags = latest ? latest.sintomas_flags || 0 : 0;
@@ -1239,10 +1873,6 @@ async function toggleQuickCountermeasure(bitMask) {
 
 async function toggleFemaleIronCountermeasure() {
   if (!currentAstronautDetail) return;
-  if (isPriorityMode && !priorityAstronautIds.has(currentAstronautDetail.id)) {
-    showToast("Prioridad Médica Total activa: atiende al tripulante en estado Muy Crítico.", true);
-    return;
-  }
   const hist = currentAstronautDetail.history || [];
   const latest = hist.length > 0 ? hist[hist.length - 1] : null;
   const targetDay = latest ? latest.dia_mision : currentMissionData?.dia_actual || 14;
@@ -1268,7 +1898,7 @@ async function toggleFemaleIronCountermeasure() {
     if (res.ok) {
       showToast(
         nextIron === 1
-          ? "Suplemento de Hierro (Fe) + B-Complex e hidratación activados."
+          ? "Suplemento de Hierro + Complejo B e hidratación activados."
           : "Suplemento de Hierro desactivado."
       );
       await refreshMissionState(true);
@@ -1278,52 +1908,330 @@ async function toggleFemaleIronCountermeasure() {
   }
 }
 
-function openCheckinForCurrentAstronaut() {
-  if (!currentAstronautId) return;
-  if (isPriorityMode && !priorityAstronautIds.has(currentAstronautId)) {
-    showToast("Prioridad Médica Total activa: solo se permite registrar controles al paciente prioritario.", true);
+/* =========================================================================
+ * Vista MODIFICAR ASTRONAUTA (Edicion Completa, Exportar Bitacora y Eliminar)
+ * ========================================================================= */
+let modifyRequestSeq = 0;
+
+function populateModifyAstronautSelector(crewList, initialLoad = false) {
+  const sel = document.getElementById("mod-astronaut-select");
+  if (!sel) return;
+  const list = Array.isArray(crewList) ? crewList : [];
+  const prevVal = sel.value;
+
+  sel.innerHTML = list
+    .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.nombre)} (${escapeHtml(c.id)})</option>`)
+    .join("");
+
+  if (list.length === 0) {
+    const badge = document.getElementById("mod-astro-meta-badge");
+    if (badge) badge.textContent = "Sin tripulantes registrados";
     return;
   }
-  switchOptionView("cargar");
-  switchCargarTab("checkin");
-  const knownAstro =
-    (currentAstronautDetail && currentAstronautDetail.id === currentAstronautId ? currentAstronautDetail : null) ||
-    (currentMissionData?.crew || []).find((c) => c.id === currentAstronautId);
-  const hormBox = document.getElementById("ci-hormonal-box");
-  if (hormBox && knownAstro) {
-    hormBox.classList.toggle("hidden", (knownAstro.sexo || "M").toUpperCase() !== "F");
+
+  if (prevVal && list.some((c) => c.id === prevVal)) {
+    sel.value = prevVal;
+  } else {
+    sel.value = (currentAstronautId && list.some((c) => c.id === currentAstronautId))
+      ? currentAstronautId
+      : list[0].id;
   }
-  const sel = document.getElementById("ci-astronaut");
-  if (sel) {
-    sel.value = currentAstronautId;
-    prefillCheckinFromAstronaut(currentAstronautId);
+
+  if (initialLoad || activeOptionView === "modificar") {
+    const modForm = document.getElementById("modify-astronaut-form");
+    const isEditingMod = modForm && modForm.contains(document.activeElement);
+    if (!isEditingMod) {
+      loadAstronautForModify(sel.value);
+    }
   }
 }
 
-function exportCurrentAstronautLog() {
-  if (!currentAstronautId) return;
-  window.location.href = `/api/astronauts/${encodeURIComponent(currentAstronautId)}/export`;
+function toggleModifyHormonalVisibility() {
+  const sexEl = document.getElementById("mod-sexo");
+  const hormBox = document.getElementById("mod-hormonal-box");
+  if (sexEl && hormBox) {
+    hormBox.classList.toggle("hidden", (sexEl.value || "M").toUpperCase() !== "F");
+  }
 }
 
-async function deleteCurrentAstronaut() {
-  if (!currentAstronautId || !currentAstronautDetail) return;
-  if (isPriorityMode && priorityAstronautIds.has(currentAstronautId)) {
-    showToast("Prioridad Médica Total: no se puede eliminar un tripulante en estado Muy Crítico.", true);
+function onModifyPredefinedAvatarChange(val) {
+  if (!modCustomAvatarDataUrl) {
+    const prev = document.getElementById("mod-avatar-preview");
+    if (prev && val) prev.src = val;
+  }
+}
+
+async function onModifyAvatarFileSelected(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  try {
+    const dataUrl = await readImageFileAsDataUrl(file);
+    modCustomAvatarDataUrl = dataUrl;
+    const prev = document.getElementById("mod-avatar-preview");
+    const status = document.getElementById("mod-avatar-status");
+    if (prev) prev.src = dataUrl;
+    if (status) status.textContent = `Nueva foto lista: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+    showToast("Nueva fotografía lista para guardar en la modificación.");
+  } catch (err) {
+    showToast(err.message || "Imagen inválida", true);
+    ev.target.value = "";
+  }
+}
+
+function clearModifyCustomAvatar() {
+  modCustomAvatarDataUrl = null;
+  const input = document.getElementById("mod-avatar-file");
+  const prev = document.getElementById("mod-avatar-preview");
+  const status = document.getElementById("mod-avatar-status");
+  if (input) input.value = "";
+  if (prev) prev.src = resolveAvatarUrl(modOriginalAvatarPath || "assets/avatars/astro_01.svg");
+  if (status) status.textContent = "Se conserva la foto actual salvo que elijas otra";
+}
+
+async function loadAstronautForModify(astronautId) {
+  if (!astronautId) return;
+  const reqId = ++modifyRequestSeq;
+  try {
+    const res = await fetch(`/api/astronauts/${encodeURIComponent(astronautId)}`);
+    if (!res.ok) return;
+    const a = await res.json();
+    if (reqId !== modifyRequestSeq) return;
+
+    const setV = (id, v) => {
+      const el = document.getElementById(id);
+      if (el && v !== undefined && v !== null) el.value = v;
+    };
+
+    const rep = a.report || {};
+    const b = a.baseline || {};
+    const hist = a.history || [];
+    const latest = hist.length > 0 ? hist[hist.length - 1] : null;
+    const isFem = (a.sexo || "M").toUpperCase() === "F";
+
+    const badge = document.getElementById("mod-astro-meta-badge");
+    if (badge) {
+      badge.textContent = `ID: ${a.id} · Estado: ${rep.resumen_estado || "Normal"} (${rep.health_score ?? 100}%)`;
+    }
+
+    setV("mod-nombre", a.nombre || "");
+    setV("mod-sexo", isFem ? "F" : "M");
+    setV("mod-rol", a.rol || "");
+    setV("mod-rad-previa", (a.radiacion_previa_msv ?? 0).toFixed(1));
+    setV("mod-rad-mision", (a.radiacion_mision_msv ?? 0).toFixed(2));
+
+    modOriginalAvatarPath = a.avatar || "assets/avatars/astro_01.svg";
+    modCustomAvatarDataUrl = null;
+    const fileIn = document.getElementById("mod-avatar-file");
+    if (fileIn) fileIn.value = "";
+    const statusNote = document.getElementById("mod-avatar-status");
+    if (statusNote) statusNote.textContent = "Se conserva la foto actual salvo que elijas otra";
+    const avSel = document.getElementById("mod-avatar-select");
+    if (avSel && ["assets/avatars/astro_01.svg", "assets/avatars/astro_02.svg", "assets/avatars/astro_03.svg", "assets/avatars/astro_04.svg"].includes(modOriginalAvatarPath)) {
+      avSel.value = modOriginalAvatarPath;
+    }
+    const avPrev = document.getElementById("mod-avatar-preview");
+    if (avPrev) avPrev.src = resolveAvatarUrl(modOriginalAvatarPath);
+
+    /* Todos los parametros basales */
+    setV("mod-b-fc", b.fc_base ?? 70);
+    setV("mod-b-pasis", b.pa_sis_base ?? 120);
+    setV("mod-b-padia", b.pa_dia_base ?? 80);
+    setV("mod-b-spo2", b.spo2_base ?? 98);
+    setV("mod-b-temp", b.temp_base ?? 36.6);
+    setV("mod-b-glucosa", b.glucosa_base ?? 90);
+    setV("mod-b-peso", b.peso_base ?? 72);
+    setV("mod-b-sueno", b.sueno_base_h ?? 7.5);
+    setV("mod-b-animo", b.animo_base ?? 8);
+    setV("mod-b-estres", b.estres_base ?? 3);
+    setV("mod-b-cog", b.cognitivo_base_ms ?? 260);
+    setV("mod-b-cal", b.calorias_objetivo_kcal ?? 2500);
+    setV("mod-b-hid", b.hidratacion_objetivo_ml ?? 2500);
+    setV("mod-b-apetito", b.apetito_base ?? 4);
+    setV("mod-b-ej", b.ejercicio_objetivo_min ?? 90);
+    setV("mod-b-pre", b.pre_resp_o2_objetivo_min ?? 120);
+    setV("mod-b-vision", b.vision_base ?? 1.0);
+    setV("mod-b-osea", b.densidad_osea_base_pct ?? 100);
+    setV("mod-b-dosis", b.dosis_diaria_nominal_msv ?? 0.5);
+
+    /* Ultima muestra clinica actual */
+    setV("mod-s-dia", latest ? latest.dia_mision : (currentMissionData?.dia_actual || 1));
+    setV("mod-s-fc", latest ? latest.fc : (b.fc_base ?? 70));
+    setV("mod-s-spo2", latest ? latest.spo2 : (b.spo2_base ?? 98));
+    setV("mod-s-pasis", latest ? latest.pa_sis : (b.pa_sis_base ?? 120));
+    setV("mod-s-padia", latest ? latest.pa_dia : (b.pa_dia_base ?? 80));
+    setV("mod-s-temp", latest ? latest.temp_c : (b.temp_base ?? 36.6));
+    setV("mod-s-glucosa", latest ? latest.glucosa_mg_dl : (b.glucosa_base ?? 90));
+    setV("mod-s-peso", latest ? latest.peso_kg : (b.peso_base ?? 72));
+    setV("mod-s-vision", latest ? latest.vision_actual : (b.vision_base ?? 1.0));
+    setV("mod-s-sueno", latest ? latest.sueno_horas : (b.sueno_base_h ?? 7.5));
+    setV("mod-s-estres", latest ? latest.estres : (b.estres_base ?? 3));
+    setV("mod-s-cefalea", latest ? latest.dolor_cabeza : 0);
+    setV("mod-s-mareo", latest ? latest.mareo_vestibular : 0);
+    setV("mod-s-ejercicio", latest ? latest.ejercicio_min : (b.ejercicio_objetivo_min ?? 90));
+    setV("mod-s-hidratacion", latest ? latest.hidratacion_ml : (b.hidratacion_objetivo_ml ?? 2500));
+
+    setV("mod-s-fase", latest ? (latest.fase_ciclo ?? 0) : 0);
+    setV("mod-s-dia-ciclo", latest ? (latest.dia_ciclo ?? 0) : 0);
+    setV("mod-s-flujo", latest ? (latest.flujo_menstrual ?? 0) : 0);
+    setV("mod-s-colico", latest ? (latest.colico_menstrual ?? 0) : 0);
+    const ironCb = document.getElementById("mod-s-hierro");
+    if (ironCb) ironCb.checked = latest ? (latest.suplemento_hierro === 1) : false;
+
+    toggleModifyHormonalVisibility();
+  } catch (err) {
+    console.error("Error cargando datos para modificar astronauta:", err);
+  }
+}
+
+async function submitModifyAstronaut(ev) {
+  ev.preventDefault();
+  const sel = document.getElementById("mod-astronaut-select");
+  const astroId = sel ? sel.value : "";
+  if (!astroId) {
+    showToast("Selecciona un astronauta primero.", true);
     return;
   }
+
+  let avatarValue = modOriginalAvatarPath || document.getElementById("mod-avatar-select").value;
+  if (modCustomAvatarDataUrl) {
+    avatarValue = modCustomAvatarDataUrl;
+  } else {
+    const avSel = document.getElementById("mod-avatar-select");
+    if (avSel && avSel.value && avSel.value !== modOriginalAvatarPath &&
+        ["assets/avatars/astro_01.svg", "assets/avatars/astro_02.svg", "assets/avatars/astro_03.svg", "assets/avatars/astro_04.svg"].includes(avSel.value) &&
+        ["assets/avatars/astro_01.svg", "assets/avatars/astro_02.svg", "assets/avatars/astro_03.svg", "assets/avatars/astro_04.svg"].includes(modOriginalAvatarPath)) {
+      avatarValue = avSel.value;
+    }
+  }
+
+  const sexVal = document.getElementById("mod-sexo").value;
+  const isFem = sexVal.toUpperCase() === "F";
+
+  const putPayload = {
+    nombre: document.getElementById("mod-nombre").value.trim(),
+    sexo: sexVal,
+    rol: document.getElementById("mod-rol").value.trim(),
+    avatar: avatarValue,
+    radiacion_previa_msv: parseFloat(document.getElementById("mod-rad-previa").value),
+    radiacion_mision_msv: parseFloat(document.getElementById("mod-rad-mision").value),
+    baseline: {
+      fc_base: parseFloat(document.getElementById("mod-b-fc").value),
+      pa_sis_base: parseFloat(document.getElementById("mod-b-pasis").value),
+      pa_dia_base: parseFloat(document.getElementById("mod-b-padia").value),
+      spo2_base: parseFloat(document.getElementById("mod-b-spo2").value),
+      temp_base: parseFloat(document.getElementById("mod-b-temp").value),
+      glucosa_base: parseFloat(document.getElementById("mod-b-glucosa").value),
+      peso_base: parseFloat(document.getElementById("mod-b-peso").value),
+      sueno_base_h: parseFloat(document.getElementById("mod-b-sueno").value),
+      animo_base: parseInt(document.getElementById("mod-b-animo").value, 10),
+      estres_base: parseInt(document.getElementById("mod-b-estres").value, 10),
+      cognitivo_base_ms: parseFloat(document.getElementById("mod-b-cog").value),
+      calorias_objetivo_kcal: parseInt(document.getElementById("mod-b-cal").value, 10),
+      hidratacion_objetivo_ml: parseInt(document.getElementById("mod-b-hid").value, 10),
+      apetito_base: parseInt(document.getElementById("mod-b-apetito").value, 10),
+      ejercicio_objetivo_min: parseInt(document.getElementById("mod-b-ej").value, 10),
+      pre_resp_o2_objetivo_min: parseInt(document.getElementById("mod-b-pre").value, 10),
+      vision_base: parseFloat(document.getElementById("mod-b-vision").value),
+      densidad_osea_base_pct: parseFloat(document.getElementById("mod-b-osea").value),
+      dosis_diaria_nominal_msv: parseFloat(document.getElementById("mod-b-dosis").value)
+    }
+  };
+
+  try {
+    const res = await fetch(`/api/astronauts/${encodeURIComponent(astroId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(putPayload)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.error || "Error modificando datos del astronauta", true);
+      return;
+    }
+
+    const updateSample = document.getElementById("mod-update-sample-cb")?.checked;
+    if (updateSample) {
+      const samplePayload = {
+        dia_mision: parseInt(document.getElementById("mod-s-dia").value, 10) || 1,
+        fc: parseFloat(document.getElementById("mod-s-fc").value),
+        spo2: parseFloat(document.getElementById("mod-s-spo2").value),
+        pa_sis: parseFloat(document.getElementById("mod-s-pasis").value),
+        pa_dia: parseFloat(document.getElementById("mod-s-padia").value),
+        temp_c: parseFloat(document.getElementById("mod-s-temp").value),
+        glucosa_mg_dl: parseFloat(document.getElementById("mod-s-glucosa").value),
+        peso_kg: parseFloat(document.getElementById("mod-s-peso").value),
+        vision_actual: parseFloat(document.getElementById("mod-s-vision").value),
+        sueno_horas: parseFloat(document.getElementById("mod-s-sueno").value),
+        estres: parseInt(document.getElementById("mod-s-estres").value, 10),
+        dolor_cabeza: parseInt(document.getElementById("mod-s-cefalea").value, 10),
+        mareo_vestibular: parseInt(document.getElementById("mod-s-mareo").value, 10),
+        ejercicio_min: parseInt(document.getElementById("mod-s-ejercicio").value, 10),
+        hidratacion_ml: parseInt(document.getElementById("mod-s-hidratacion").value, 10),
+        fase_ciclo: isFem ? (parseInt(document.getElementById("mod-s-fase").value, 10) || 0) : 0,
+        dia_ciclo: isFem ? (parseInt(document.getElementById("mod-s-dia-ciclo").value, 10) || 0) : 0,
+        flujo_menstrual: isFem ? (parseInt(document.getElementById("mod-s-flujo").value, 10) || 0) : 0,
+        colico_menstrual: isFem ? (parseInt(document.getElementById("mod-s-colico").value, 10) || 0) : 0,
+        suplemento_hierro: isFem && document.getElementById("mod-s-hierro")?.checked ? 1 : 0
+      };
+      const sRes = await fetch(`/api/astronauts/${encodeURIComponent(astroId)}/samples`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(samplePayload)
+      });
+      if (!sRes.ok) {
+        const sData = await sRes.json().catch(() => ({}));
+        showToast(sData.error || "Perfil guardado, pero hubo un error en los valores clínicos", true);
+        await refreshMissionState(true);
+        return;
+      }
+    }
+
+    avatarCacheBust = Date.now();
+    modCustomAvatarDataUrl = null;
+    showToast(`Datos de ${putPayload.nombre} actualizados correctamente.`);
+    await refreshMissionState(true);
+    await loadAstronautForModify(astroId);
+  } catch (err) {
+    showToast("Error de red al guardar modificaciones", true);
+  }
+}
+
+function exportSelectedModifyAstronautLog() {
+  const sel = document.getElementById("mod-astronaut-select");
+  const astroId = sel ? sel.value : currentAstronautId;
+  if (!astroId) {
+    showToast("Selecciona un astronauta para exportar su bitácora.", true);
+    return;
+  }
+  window.location.href = `/api/astronauts/${encodeURIComponent(astroId)}/export`;
+}
+
+async function deleteSelectedModifyAstronaut() {
+  const sel = document.getElementById("mod-astronaut-select");
+  const astroId = sel ? sel.value : "";
+  if (!astroId) {
+    showToast("Selecciona un astronauta para eliminar.", true);
+    return;
+  }
+  const crewObj = allCrewList.find((c) => c.id === astroId);
+  const labelName = crewObj?.nombre || astroId;
   const confirmDel = window.confirm(
-    `¿Confirmas eliminar el perfil de ${currentAstronautDetail.nombre} (${currentAstronautId})?`
+    `¿Confirmas eliminar el perfil completo de ${labelName} (${astroId})?`
   );
   if (!confirmDel) return;
 
   try {
-    const res = await fetch(`/api/astronauts/${encodeURIComponent(currentAstronautId)}`, {
+    const res = await fetch(`/api/astronauts/${encodeURIComponent(astroId)}`, {
       method: "DELETE"
     });
     if (res.ok) {
-      showToast(`Astronauta ${currentAstronautId} eliminado.`);
-      closeAstronautDetail();
+      showToast(`Astronauta ${labelName} eliminado.`);
+      if (currentAstronautId === astroId) {
+        closeAstronautDetail();
+      }
       await refreshMissionState(true);
+    } else {
+      showToast("No se pudo eliminar el astronauta.", true);
     }
   } catch (err) {
     showToast("Error al eliminar astronauta", true);
@@ -1333,25 +2241,38 @@ async function deleteCurrentAstronaut() {
 /* =========================================================================
  * Vista PROMEDIO DE SALUD y Entorno de Cabina (CabinEnv)
  * ========================================================================= */
-function renderPromedioView(m, forceEnvFill = false) {
+function renderPromedioView(m, crewList, forceEnvFill = false) {
   const sum = m.summary || {};
   const env = m.env || {};
+  const list = Array.isArray(crewList) && crewList.length > 0 ? crewList : (m.crew || []);
 
   const setTxt = (id, txt) => {
     const el = document.getElementById(id);
     if (el) el.textContent = txt;
   };
 
-  const avgVal = sum.mission_health_avg ?? m.mission_health_avg ?? 100;
+  let avgVal = sum.mission_health_avg ?? m.mission_health_avg ?? 100;
+  let okCount = sum.crew_ok_count ?? 0;
+  let cautCount = sum.crew_caution_count ?? 0;
+  let critCount = sum.crew_critical_count ?? 0;
+  let vcCount = sum.crew_very_critical_count ?? 0;
+
+  if (list.length > 0) {
+    avgVal = Math.round(list.reduce((acc, c) => acc + (c.health_score ?? 100), 0) / list.length);
+    okCount = list.filter((c) => c.global_status === 0).length;
+    cautCount = list.filter((c) => c.global_status === 1).length;
+    critCount = list.filter((c) => c.global_status === 2).length;
+    vcCount = list.filter(isCrewVeryCritical).length;
+  }
+
   const sumAvgEl = document.getElementById("sum-health-avg");
   if (sumAvgEl) {
     sumAvgEl.textContent = `${avgVal}%`;
     sumAvgEl.style.color = avgVal < 60 ? "#ff2a4b" : avgVal < 85 ? "#ffd000" : "#00ff66";
   }
-  const vcCount = sum.crew_very_critical_count ?? 0;
   setTxt(
     "sum-crew-breakdown",
-    `Nominal: ${sum.crew_ok_count ?? 0} · Precaución: ${sum.crew_caution_count ?? 0} · Crítico: ${sum.crew_critical_count ?? 0}${vcCount > 0 ? ` · Muy Crítico: ${vcCount}` : ""}`
+    `Normal: ${okCount} · Precaución: ${cautCount} · Crítico: ${critCount}${vcCount > 0 ? ` · Urgencia: ${vcCount}` : ""}`
   );
   setTxt("sum-fc-avg", `${(sum.fc_avg ?? 70).toFixed(1)} lpm`);
   setTxt("sum-spo2-avg", `${(sum.spo2_avg ?? 98).toFixed(1)}%`);
@@ -1359,7 +2280,7 @@ function renderPromedioView(m, forceEnvFill = false) {
   setTxt("sum-rad-avg", `${(sum.rad_mision_avg_msv ?? 0).toFixed(2)} mSv`);
   setTxt("sum-estres-sub", `Estrés medio: ${(sum.estres_avg ?? 3).toFixed(1)}/10`);
 
-  /* Semaforo de los 5 Peligros HRP */
+  /* Semaforo de Factores de Riesgo Fisiologico */
   const hazList = document.getElementById("hazards-semaphore-list");
   const hazStatus = sum.hazard_status || [0, 0, 0, 0, 0];
   if (hazList) {
@@ -1367,7 +2288,7 @@ function renderPromedioView(m, forceEnvFill = false) {
       const st = hazStatus[h.id] || 0;
       const cls = st === 2 ? "haz-critical" : st === 1 ? "haz-caution" : "";
       const badgeColor = st === 2 ? "#ff2a4b" : st === 1 ? "#ffd000" : "#00ff66";
-      const badgeText = st === 2 ? "CRÍTICO" : st === 1 ? "PRECAUCIÓN" : "NOMINAL";
+      const badgeText = st === 2 ? "CRÍTICO" : st === 1 ? "PRECAUCIÓN" : "NORMAL";
       return `<div class="hazard-row ${cls}">
         <div>
           <strong>${escapeHtml(h.name)}</strong>
@@ -1430,53 +2351,6 @@ async function submitCabinEnvUpdate(ev) {
 }
 
 /* =========================================================================
- * Simulador HRP (POST /api/missions/:id/simulate) y Latencia
- * ========================================================================= */
-async function setMissionLatency(seconds) {
-  if (isPriorityMode) {
-    showToast("Prioridad Médica Total activa: los cambios de latencia están bloqueados hasta atender al paciente crítico.", true);
-    return;
-  }
-  try {
-    const res = await fetch(`/api/missions/${encodeURIComponent(currentMissionId)}/env`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ latencia_com_seg: seconds })
-    });
-    if (res.ok) {
-      const modeTxt = seconds > 5 ? "MODO AUTÓNOMO ACTIVADO (Marte)" : "Tiempo Real activado";
-      showToast(`Latencia ajustada a ${seconds}s · ${modeTxt}`);
-      await refreshMissionState(true);
-    }
-  } catch (err) {
-    showToast("Error cambiando latencia", true);
-  }
-}
-
-async function triggerSimulation(scenarioName) {
-  if (isPriorityMode && scenarioName !== "NOMINAL") {
-    showToast("Prioridad Médica Total activa: usa Restablecer Nominal o atiende al paciente prioritario.", true);
-    return;
-  }
-  try {
-    const res = await fetch(`/api/missions/${encodeURIComponent(currentMissionId)}/simulate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scenario: scenarioName })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showToast(data.error || "Error aplicando escenario", true);
-      return;
-    }
-    showToast(`Escenario clínico aplicado: ${SIM_LABELS_ES[scenarioName] || scenarioName}`);
-    await refreshMissionState(true);
-  } catch (err) {
-    showToast("Error ejecutando simulación", true);
-  }
-}
-
-/* =========================================================================
  * Crew Check-in Diario + Mini-Test de Reflejos (3 toques)
  * ========================================================================= */
 function populateCheckinAstronautSelector(crewList, initialLoad = false) {
@@ -1484,7 +2358,7 @@ function populateCheckinAstronautSelector(crewList, initialLoad = false) {
   if (!sel) return;
 
   if (!crewList || crewList.length === 0) {
-    sel.innerHTML = `<option value="">Sin tripulantes asignados</option>`;
+    sel.innerHTML = `<option value="">Sin tripulantes registrados</option>`;
     const hormBox = document.getElementById("ci-hormonal-box");
     if (hormBox) hormBox.classList.add("hidden");
     return;
@@ -1492,25 +2366,22 @@ function populateCheckinAstronautSelector(crewList, initialLoad = false) {
 
   const prevVal = sel.value;
   const currentSignature = Array.from(sel.options)
-    .map((o) => `${o.value}:${o.disabled ? "1" : "0"}`)
+    .map((o) => o.value)
     .join(",");
   const nextSignature = crewList
-    .map((a) => `${a.id}:${isPriorityMode && !priorityAstronautIds.has(a.id) ? "1" : "0"}`)
+    .map((a) => a.id)
     .join(",");
 
   if (initialLoad || currentSignature !== nextSignature) {
     sel.innerHTML = crewList
-      .map((a) => {
-        const disabledAttr = isPriorityMode && !priorityAstronautIds.has(a.id) ? "disabled" : "";
-        return `<option value="${escapeAttr(a.id)}" ${disabledAttr}>${escapeHtml(a.nombre)} (${escapeHtml(a.id)})</option>`;
-      })
+      .map((a) => `<option value="${escapeAttr(a.id)}">${escapeHtml(a.nombre)} (${escapeHtml(a.id)})</option>`)
       .join("");
-    if (isPriorityMode && topPriorityAstronautId && (!prevVal || !priorityAstronautIds.has(prevVal))) {
-      sel.value = topPriorityAstronautId;
-    } else if (prevVal && crewList.some((c) => c.id === prevVal)) {
+    if (prevVal && crewList.some((c) => c.id === prevVal)) {
       sel.value = prevVal;
+    } else if (currentAstronautId && crewList.some((c) => c.id === currentAstronautId)) {
+      sel.value = currentAstronautId;
     }
-    if (initialLoad || !prevVal || !crewList.some((c) => c.id === prevVal) || (isPriorityMode && !priorityAstronautIds.has(prevVal))) {
+    if (initialLoad || !prevVal || !crewList.some((c) => c.id === prevVal)) {
       prefillCheckinFromAstronaut(sel.value);
     }
   }
@@ -1683,12 +2554,8 @@ async function submitCrewCheckin(ev) {
   ev.preventDefault();
   const astroId = document.getElementById("ci-astronaut").value;
   if (!astroId) return;
-  if (isPriorityMode && !priorityAstronautIds.has(astroId)) {
-    showToast("Prioridad Médica Total: solo se permite check-in para el paciente Muy Crítico.", true);
-    return;
-  }
 
-  const crewObj = (currentMissionData?.crew || []).find((c) => c.id === astroId);
+  const crewObj = allCrewList.find((c) => c.id === astroId);
   const isFem = crewObj
     ? (crewObj.sexo || "M").toUpperCase() === "F"
     : !document.getElementById("ci-hormonal-box")?.classList.contains("hidden");
@@ -1734,16 +2601,16 @@ async function submitCrewCheckin(ev) {
     });
     const data = await res.json();
     if (!res.ok) {
-      showToast(data.error || "Error validando check-in", true);
+      showToast(data.error || "Error validando control diario", true);
       return;
     }
     const astroName = crewObj?.nombre || astroId;
-    showToast(`Check-in registrado para ${astroName} (Puntaje de Salud: ${data.report?.health_score}%).`);
+    showToast(`Control diario registrado para ${astroName} (Puntaje de Salud: ${data.report?.health_score}%).`);
     currentAstronautId = astroId;
     switchOptionView("mostrar");
     await refreshMissionState(true);
   } catch (err) {
-    showToast("Error enviando check-in", true);
+    showToast("Error enviando control diario", true);
   }
 }
 
@@ -1901,10 +2768,6 @@ function fillSampleImportTemplate() {
 }
 
 async function submitImportedJson() {
-  if (isPriorityMode) {
-    showToast("Prioridad Médica Total: la importación de archivos está bloqueada hasta estabilizar al paciente crítico.", true);
-    return;
-  }
   const raw = document.getElementById("json-import-preview").value.trim();
   if (!raw) {
     showToast("Selecciona un archivo .json o carga la plantilla primero", true);
@@ -1948,9 +2811,7 @@ async function submitImportedJson() {
     const jsonAvaPrev = document.getElementById("json-avatar-preview");
     if (jsonAvaPrev) jsonAvaPrev.src = "assets/avatars/astro_01.svg";
 
-    currentMissionId = data.mission_id || payload.mission_id || currentMissionId;
     currentAstronautId = data.id;
-    await loadMissionsList();
     switchOptionView("mostrar");
     await refreshMissionState(true);
   } catch (err) {
@@ -1960,10 +2821,6 @@ async function submitImportedJson() {
 
 async function submitNewAstronaut(ev) {
   ev.preventDefault();
-  if (isPriorityMode) {
-    showToast("Prioridad Médica Total: no se pueden crear tripulantes hasta estabilizar al paciente crítico.", true);
-    return;
-  }
   const base = Object.assign({}, defaults || {});
   delete base.NASA_CAREER_RAD_LIMIT_MSV;
   const fcVal = parseFloat(document.getElementById("na-fc-base").value);
@@ -1977,7 +2834,7 @@ async function submitNewAstronaut(ev) {
     nombre: document.getElementById("na-nombre").value.trim(),
     sexo: document.getElementById("na-sexo")?.value || "M",
     rol: document.getElementById("na-rol").value.trim(),
-    mission_id: document.getElementById("na-mission").value || currentMissionId,
+    mission_id: currentMissionId || "artemis_sim",
     avatar: newAstronautCustomAvatarDataUrl || document.getElementById("na-avatar").value,
     radiacion_previa_msv: Number.isFinite(radPrevVal) ? radPrevVal : 0,
     baseline: base
@@ -1994,12 +2851,10 @@ async function submitNewAstronaut(ev) {
       showToast(data.error || "Error creando astronauta", true);
       return;
     }
-    showToast(`Astronauta ${data.nombre} creado y asignado a ${data.mission_id}.`);
+    showToast(`Astronauta ${data.nombre} registrado correctamente.`);
     clearNewAstronautCustomAvatar();
-    currentMissionId = data.mission_id;
     currentAstronautId = data.id;
     switchOptionView("mostrar");
-    await loadMissionsList();
     await refreshMissionState(true);
   } catch (err) {
     showToast("Error creando astronauta", true);
@@ -2132,7 +2987,7 @@ async function loadGlossaryData() {
     glossaryData = await res.json();
     renderGlossary();
   } catch (err) {
-    console.error("Error cargando glosario HRP:", err);
+    console.error("Error cargando glosario médico:", err);
   }
 }
 
@@ -2218,7 +3073,7 @@ function renderGlossary() {
   if (!grid) return;
 
   if (!glossaryData || !Array.isArray(glossaryData.items)) {
-    grid.innerHTML = `<div class="empty-grid-msg">Cargando glosario médico NASA HRP / CSA...</div>`;
+    grid.innerHTML = `<div class="empty-grid-msg">Cargando glosario clínico...</div>`;
     return;
   }
 
@@ -2237,7 +3092,7 @@ function renderGlossary() {
         const sev = item.severity || "OK";
         const cat = item.category || "HAZARDS";
         const catLabel = CATEGORY_LABELS_ES[cat] || cat;
-        const sevLabel = SEVERITY_LABELS_ES[sev] || "Nominal";
+        const sevLabel = SEVERITY_LABELS_ES[sev] || "Normal";
         const safeUrl = /^https?:\/\//i.test(item.source_url || "") ? item.source_url : "#";
         const sourceText = item.source_title || item.source_name || "Fuente oficial NASA / CSA";
         const isExpanded = glossaryExpandedIds.has(item.id);
@@ -2286,53 +3141,6 @@ function renderGlossary() {
         `;
       })
       .join("");
-  }
-}
-
-async function submitNewMission(ev) {
-  ev.preventDefault();
-  if (isPriorityMode) {
-    showToast("Prioridad Médica Total: no se pueden crear misiones hasta estabilizar al paciente crítico.", true);
-    return;
-  }
-  const diaVal = parseInt(document.getElementById("nm-dia").value, 10);
-  const gravVal = parseInt(document.getElementById("nm-gravedad").value, 10);
-  const latVal = parseFloat(document.getElementById("nm-latencia").value);
-  const payload = {
-    id: document.getElementById("nm-id").value.trim(),
-    nombre: document.getElementById("nm-nombre").value.trim(),
-    destino: document.getElementById("nm-destino").value.trim(),
-    dia_actual: Number.isFinite(diaVal) ? diaVal : 1,
-    env: {
-      presion_cabina_kpa: 101.3,
-      po2_kpa: 21.3,
-      pco2_kpa: 0.35,
-      tasa_rad_msv_h: 0.02,
-      evento_spe_activo: 0,
-      gravedad_actual: Number.isFinite(gravVal) ? gravVal : 0,
-      latencia_com_seg: Number.isFinite(latVal) ? latVal : 1.3
-    }
-  };
-
-  try {
-    const res = await fetch("/api/missions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showToast(data.error || "Error creando misión", true);
-      return;
-    }
-    showToast(`Misión ${data.nombre} creada.`);
-    currentMissionId = data.id;
-    currentAstronautId = null;
-    await loadMissionsList();
-    switchOptionView("mostrar");
-    await refreshMissionState(true);
-  } catch (err) {
-    showToast("Error creando misión", true);
   }
 }
 

@@ -26,10 +26,10 @@ const char *alert_severity_to_str(AlertSeverity sev) {
 
 const char *aptitude_to_str(OperationalAptitude apt) {
     switch (apt) {
-        case APT_GO:         return "GO";
-        case APT_RESTRICTED: return "RESTRICTED";
-        case APT_NO_GO:      return "NO-GO";
-        default:             return "GO";
+        case APT_GO:         return "Apto";
+        case APT_RESTRICTED: return "Restringido";
+        case APT_NO_GO:      return "No apto";
+        default:             return "Apto";
     }
 }
 
@@ -139,7 +139,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
     rep->health_score    = 100;
     rep->eva_aptitude    = APT_GO;
     rep->autonomous_mode = (env->latencia_com_seg > 5.0f) ? 1 : 0;
-    safe_strcpy(rep->resumen_estado, sizeof(rep->resumen_estado), "Nominal");
+    safe_strcpy(rep->resumen_estado, sizeof(rep->resumen_estado), "Normal");
 
     DailyHealthSample fallback_sample;
     const DailyHealthSample *s = astronaut_get_latest_sample(a);
@@ -179,10 +179,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_RADIATION,
                    SYS_RADIATION,
                    ALERT_CRITICAL,
-                   "CSA Radi-N2 / CANS / Risk of Radiation",
+                   "Radi-N2 / CANS / Riesgo por Radiación",
                    "Tormenta Solar SPE / Pico Dosimetrico",
                    exp,
-                   "Ingresar de inmediato a zona blindada (storm shelter), suspender EVA, activar dosimetria continua (Radi-N2/CANS) y reforzar blindaje con bolsas de agua.");
+                   "Ingresar de inmediato al refugio blindado, suspender EVA, activar dosimetria continua (Radi-N2/CANS) y reforzar blindaje con bolsas de agua.");
     } else if (s->dosis_dia_msv >= 1.0f) {
         char exp[192];
         snprintf(exp, sizeof(exp),
@@ -193,7 +193,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_RADIATION,
                    SYS_RADIATION,
                    ALERT_CAUTION,
-                   "CSA Radi-N2 / CANS / Risk of Radiation",
+                   "Radi-N2 / CANS / Riesgo por Radiación",
                    "Exposicion Diaria a Radiacion Elevada",
                    exp,
                    "Reducir permanencia en modulos externos y verificar lectura de dosimetro de neutrones.");
@@ -203,31 +203,31 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
     if (total_career_rad >= NASA_CAREER_RAD_LIMIT_MSV) {
         char exp[192];
         snprintf(exp, sizeof(exp),
-                 "Dosis acumulada de carrera (%.1f mSv) alcanza/supera el limite NASA (%.0f mSv).",
+                 "Dosis acumulada de carrera (%.1f mSv) alcanza/supera el limite de seguridad (%.0f mSv).",
                  total_career_rad, NASA_CAREER_RAD_LIMIT_MSV);
         push_alert(rep,
                    "RAD_CAREER_LIMIT",
                    HAZARD_RADIATION,
                    SYS_RADIATION,
                    ALERT_CRITICAL,
-                   "CSA Radi-N2 / CANS / Risk of Radiation",
+                   "Radi-N2 / CANS / Riesgo por Radiación",
                    "Limite de Radiacion de Carrera Alcanzado",
                    exp,
                    "Prohibir nuevas exposiciones EVA, reasignar al tripulante al sector de maximo blindaje y planificar rotacion prioritaria.");
     } else if (total_career_rad >= 480.0f) {
         char exp[192];
         snprintf(exp, sizeof(exp),
-                 "Dosis acumulada de carrera (%.1f mSv) supera el 80%% del limite NASA (480/%.0f mSv).",
+                 "Dosis acumulada de carrera (%.1f mSv) supera el 80%% del limite de seguridad (480/%.0f mSv).",
                  total_career_rad, NASA_CAREER_RAD_LIMIT_MSV);
         push_alert(rep,
                    "RAD_CAREER_CAUTION",
                    HAZARD_RADIATION,
                    SYS_RADIATION,
                    ALERT_CAUTION,
-                   "CSA Radi-N2 / CANS / Risk of Radiation",
+                   "Radi-N2 / CANS / Riesgo por Radiación",
                    "Acercamiento a Limite de Radiacion (80%)",
                    exp,
-                   "Restringir exposiciones EVA no esenciales y replanificar rotaciones de mision.");
+                   "Restringir exposiciones EVA no esenciales y replanificar rotaciones operativas.");
     }
 
     /* =====================================================================
@@ -244,26 +244,26 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_GRAVITY,
                    SYS_NEURO_OCULAR,
                    ALERT_CRITICAL,
-                   "Risk of SANS / Thigh Cuff / Brain Fluid Pressure",
+                   "Riesgo SANS / Bandas en Muslos / Presión Intracraneal",
                    "Sindrome Neuro-Ocular Crítico (SANS)",
                    exp,
-                   "Iniciar protocolo Thigh Cuff de inmediato, verificar suplementacion B-Complex y ejecutar fondo de ojo / ecografia de nervio optico (Tempus Pro).");
+                   "Iniciar protocolo de compresion en muslos de inmediato, verificar suplementacion de Complejo B y ejecutar fondo de ojo / ecografia de nervio optico (Tempus Pro).");
     } else if (vision_drop >= 0.15f - 1e-4f &&
                (s->dolor_cabeza >= 4 || s->pa_sis >= b->pa_sis_base + 20.0f - 1e-4f)) {
         char exp[192];
         snprintf(exp, sizeof(exp),
                  "Indicios de SANS: vision %.2f (base %.2f), dolor de cabeza %d/10, PA sistolica %.0f mmHg.%s",
                  s->vision_actual, b->vision_base, s->dolor_cabeza, s->pa_sis,
-                 (s->sintomas_flags & SYM_THIGH_CUFF_ACTIVE) ? " [Thigh Cuff Activo]" : "");
+                 (s->sintomas_flags & SYM_THIGH_CUFF_ACTIVE) ? " [Banda en Muslos Activa]" : "");
         push_alert(rep,
                    "SANS_CAUTION",
                    HAZARD_GRAVITY,
                    SYS_NEURO_OCULAR,
                    ALERT_CAUTION,
-                   "Risk of SANS / Thigh Cuff / Brain Fluid Pressure",
+                   "Riesgo SANS / Bandas en Muslos / Presión Intracraneal",
                    "Alerta Neuro-Ocular (SANS)",
                    exp,
-                   "Activar protocolo Thigh Cuff (compresion en muslos), administrar suplemento B-Complex y programar ecografia ocular (Tempus Pro).");
+                   "Activar protocolo de bandas de compresion en muslos, administrar suplemento Complejo B y programar ecografia ocular (Tempus Pro).");
     }
 
     /* =====================================================================
@@ -279,7 +279,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_CLOSED_ENV,
                    SYS_RESPIRATORY_EVA,
                    ALERT_CRITICAL,
-                   "Risk of Hypoxia / Tempus Pro",
+                   "Riesgo de Hipoxia / Tempus Pro",
                    "Hipoxia Critica / Caida de O2 en Cabina",
                    exp,
                    "Administrar O2 suplementario al 100%, verificar suministro ECLSS y valvulas de presion parcial de O2, y suspender toda carga fisica.");
@@ -293,7 +293,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_CLOSED_ENV,
                    SYS_RESPIRATORY_EVA,
                    ALERT_CAUTION,
-                   "Risk of Hypoxia / Tempus Pro",
+                   "Riesgo de Hipoxia / Tempus Pro",
                    "Precaucion por Hipoxia / Baja pO2",
                    exp,
                    "Administrar O2 suplementario, revisar sistema ECLSS y reducir carga fisica mientras se monitorea con Tempus Pro.");
@@ -309,10 +309,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_CLOSED_ENV,
                    SYS_RESPIRATORY_EVA,
                    ALERT_CRITICAL,
-                   "Hostile Closed Environments / ECLSS",
+                   "Entornos Cerrados Hostiles / ECLSS",
                    "Hipercapnia Critica por Acumulacion de CO2",
                    exp,
-                   "Activar depurador de emergencia de CO2 (scrubber/cartuchos LiOH), ventilar modulo de inmediato y usar mascarilla de O2 si persiste cefalea.");
+                   "Activar depurador de emergencia de CO2 (cartuchos LiOH), ventilar modulo de inmediato y usar mascarilla de O2 si persiste cefalea.");
     } else if (env->pco2_kpa > 0.5f &&
                (s->dolor_cabeza >= 4 || s->cognitivo_ms > b->cognitivo_base_ms * 1.20f)) {
         char exp[192];
@@ -324,10 +324,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_CLOSED_ENV,
                    SYS_RESPIRATORY_EVA,
                    ALERT_CAUTION,
-                   "Hostile Closed Environments / ECLSS",
+                   "Entornos Cerrados Hostiles / ECLSS",
                    "Hipercapnia / Revisar Depurador de CO2",
                    exp,
-                   "Inspeccionar depurador de CO2 (scrubber) y ventilar modulo antes de atribuir el dolor de cabeza o lentitud cognitiva a fatiga simple.");
+                   "Inspeccionar depurador de CO2 y ventilar modulo antes de atribuir el dolor de cabeza o lentitud cognitiva a fatiga simple.");
     }
 
     /* =====================================================================
@@ -345,7 +345,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_CLOSED_ENV,
                    SYS_RESPIRATORY_EVA,
                    ALERT_CRITICAL,
-                   "Risk of Decompression Sickness / EVA",
+                   "Riesgo de Enfermedad Descompresiva / EVA",
                    "Riesgo Critico de Descompresion (DCS Post-EVA)",
                    exp,
                    "Iniciar protocolo inmediato de O2 al 100%, reposo absoluto de la articulacion, evaluacion neurologica y preparar recompresion en esclusa/traje.");
@@ -369,7 +369,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_GRAVITY,
                    SYS_CARDIOVASCULAR,
                    ALERT_CRITICAL,
-                   "Cardiovascular Adaptations / Venous Haemostasis / Tempus Pro",
+                   "Adaptaciones Cardiovasculares / Hemostasia Venosa / Tempus Pro",
                    "Inestabilidad Cardiovascular Critica",
                    exp,
                    "Colocar en posicion supina/piernas elevadas, administrar carga rapida de fluidos/electrolitos y realizar monitoreo ECG y ultrasonido vascular (Tempus Pro).");
@@ -385,7 +385,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_GRAVITY,
                    SYS_CARDIOVASCULAR,
                    ALERT_CAUTION,
-                   "Cardiovascular Adaptations / Venous Haemostasis / Tempus Pro",
+                   "Adaptaciones Cardiovasculares / Hemostasia Venosa / Tempus Pro",
                    "Adaptacion Cardiovascular / Hemostasia Venosa",
                    exp,
                    "Reforzar carga de fluidos y electrolitos para prevenir estasis venosa, utilizar prendas de compresion inferior y verificar flujo con Tempus Pro.");
@@ -401,7 +401,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_GRAVITY,
                    SYS_MUSCULOSKELETAL,
                    ALERT_CRITICAL,
-                   "Zero-T2 / Risk of Bone Changes",
+                   "Zero-T2 / Riesgo de Cambios Óseos",
                    "Riesgo Severo de Perdida Osea y Muscular",
                    exp,
                    "Refuerzo urgente de ejercicio resistivo (ARED/Zero-T2 >= 90 min/dia) y suplementacion obligatoria de Vitamina D diaria.");
@@ -415,7 +415,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_GRAVITY,
                    SYS_MUSCULOSKELETAL,
                    ALERT_CAUTION,
-                   "Zero-T2 / Risk of Bone Changes",
+                   "Zero-T2 / Riesgo de Cambios Óseos",
                    "Desacondicionamiento Musculoesqueletico",
                    exp,
                    "Incrementar sesiones en protocolo Zero-T2 / ARED y verificar toma diaria de Vitamina D.");
@@ -433,10 +433,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_GRAVITY,
                    SYS_NEURO_OCULAR,
                    ALERT_CAUTION,
-                   "Sensorimotor & Vestibular / Dynamic Loads / Manual Piloting",
-                   "Alteracion Vestibular / Cargas Dinamicas (NO-GO)",
+                   "Sensoriomotor y Vestibular / Cargas Dinámicas / Pilotaje",
+                   "Alteracion Vestibular / Cargas Dinamicas (No apto)",
                    exp,
-                   "Diferir pilotaje manual critico y tareas EVA por 24-48 h (EVA/Pilotaje: NO-GO); asegurar soporte de proteccion de ocupante.");
+                   "Diferir pilotaje manual critico y tareas EVA por 24-48 h (EVA/Pilotaje: No apto); asegurar soporte de proteccion de ocupante.");
     }
 
     /* =====================================================================
@@ -459,10 +459,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_CLOSED_ENV,
                    SYS_IMMUNE,
                    ALERT_CRITICAL,
-                   "Immune Biomarkers / Host-Microorganism / Standard Measures",
+                   "Biomarcadores Inmunes / Microbioma / Medidas Estándar",
                    "Compromiso Inmunologico / Metabolico Critico",
                    exp,
-                   "Aislar preventivamente al tripulante, tomar muestras seriadas de saliva/sangre, estabilizar glucemia y auditar filtros HEPA y cultivos Veggie.");
+                   "Aislar preventivamente al tripulante, tomar muestras seriadas de saliva/sangre, estabilizar glucemia y auditar filtros HEPA y cultivos vegetales a bordo.");
     } else if (fever_caut || immune_flags != 0 || glucose_out) {
         char exp[192];
         snprintf(exp, sizeof(exp),
@@ -473,7 +473,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_CLOSED_ENV,
                    SYS_IMMUNE,
                    ALERT_CAUTION,
-                   "Immune Biomarkers / Host-Microorganism / Standard Measures",
+                   "Biomarcadores Inmunes / Microbioma / Medidas Estándar",
                    "Alerta de Inmunidad / Microbioma / Glucemia",
                    exp,
                    "Reducir contacto cercano, recolectar muestra de saliva seca para biomarcadores inmunes, estabilizar glucemia y revisar higiene de cabina.");
@@ -492,10 +492,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_ISOLATION,
                    SYS_BEHAVIORAL,
                    ALERT_CRITICAL,
-                   "ARCHeR / Inadequate Sleep",
+                   "ARCHeR / Privación de Sueño",
                    "Fatiga Cognitiva Critica y Deuda de Sueno",
                    exp,
-                   "Suspender maniobras criticas (NO-GO), ajustar ciclo de iluminacion LED circadiana, garantizar bloque de 8 h de sueno protegido y soporte conductual.");
+                   "Suspender maniobras criticas (No apto), ajustar ciclo de iluminacion LED circadiana, garantizar bloque de 8 h de sueno protegido y soporte conductual.");
     } else if (sueno_3d < 6.0f &&
                (s->cognitivo_ms > b->cognitivo_base_ms * 1.15f || s->estres >= 7 || s->animo <= 4)) {
         char exp[192];
@@ -507,26 +507,26 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_ISOLATION,
                    SYS_BEHAVIORAL,
                    ALERT_CAUTION,
-                   "ARCHeR / Inadequate Sleep",
+                   "ARCHeR / Privación de Sueño",
                    "Deuda de Sueno y Fatiga Conductual (ARCHeR)",
                    exp,
-                   "Ajustar iluminacion LED circadiana, descargar tareas secundarias y asignar tiempo de desconexion / cuidado de plantas (Veggie).");
+                   "Ajustar iluminacion LED circadiana, descargar tareas secundarias y asignar tiempo de desconexion / cuidado de cultivos vegetales.");
     }
 
     if (s->cohesion_equipo <= 2) {
         char exp[192];
         snprintf(exp, sizeof(exp),
-                 "Indice de cohesion de equipo bajo (%d/5) reportado en el check-in.",
+                 "Indice de cohesion de equipo bajo (%d/5) reportado en el control diario.",
                  s->cohesion_equipo);
         push_alert(rep,
                    "ISO_TEAMWORK",
                    HAZARD_ISOLATION,
                    SYS_BEHAVIORAL,
                    ALERT_CAUTION,
-                   "Risk of Inadequate Teamwork / HFBP",
+                   "Riesgo de Cohesión de Equipo / HFBP",
                    "Friccion o Baja Cohesion de Equipo",
                    exp,
-                   "Programar briefing de coordinacion grupal, redistribuir carga de trabajo y realizar actividad compartida de descompresion.");
+                   "Programar reunion breve de coordinacion grupal, redistribuir carga de trabajo y realizar actividad compartida de distension.");
     }
 
     if ((b->calorias_objetivo_kcal > 0 && cal_7d < 0.80f * (float)b->calorias_objetivo_kcal) ||
@@ -540,10 +540,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    HAZARD_ISOLATION,
                    SYS_BEHAVIORAL,
                    ALERT_CAUTION,
-                   "Enhanced Diet / Food Appeal",
+                   "Dieta Enriquecida / Apetito Nutricional",
                    "Deficit Calórico / Fatiga de Menu Espacial",
                    exp,
-                   "Rotar a dieta enriquecida (Enhanced Diet con omega-3/flavonoides), incorporar vegetales frescos del modulo Veggie y reforzar hidratacion.");
+                   "Rotar a dieta enriquecida (con omega-3/flavonoides), incorporar vegetales frescos del cultivo a bordo y reforzar hidratacion.");
     }
 
     /* =====================================================================
@@ -563,10 +563,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                        HAZARD_GRAVITY,
                        SYS_CARDIOVASCULAR,
                        ALERT_CRITICAL,
-                       "Standard Measures / Cardiovascular Adaptations / EVA",
+                       "Medidas Estándar / Adaptaciones Cardiovasculares / EVA",
                        "Menorragia / Dismenorrea Severa y Riesgo de Anemia",
                        exp,
-                       "Suspender EVA (NO-GO), administrar hierro terapeutico + B-Complex (folato/B12), reposicion intensiva de fluidos/electrolitos y control de hemoglobina/ferritina.");
+                       "Suspender EVA (No apto), administrar hierro terapeutico + Complejo B (folato/B12), reposicion intensiva de fluidos/electrolitos y control de hemoglobina/ferritina.");
         } else if ((s->fase_ciclo == CYCLE_MENSTRUAL || s->flujo_menstrual >= 1 || s->colico_menstrual >= 4) &&
                    (s->suplemento_hierro == 0 || s->flujo_menstrual >= 2 || s->colico_menstrual >= 4 || low_hydration)) {
             char exp[192];
@@ -579,7 +579,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                        HAZARD_GRAVITY,
                        SYS_IMMUNE,
                        ALERT_CAUTION,
-                       "Standard Measures / B-Complex / Enhanced Diet",
+                       "Medidas Estándar / Complejo B / Dieta Enriquecida",
                        "Monitoreo Menstrual: Prevencion de Ferropenia y Dismenorrea",
                        exp,
                        "Activar suplementacion de Hierro + Complejo B para compensar neocitolisis espacial y perdida menstrual, reforzar hidratacion y protocolo ECLSS.");
@@ -599,10 +599,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                        HAZARD_ISOLATION,
                        SYS_BEHAVIORAL,
                        ALERT_CAUTION,
-                       "Artemis II Standard Measures / ARCHeR / B-Complex",
+                       "Medidas Estándar / ARCHeR / Complejo B",
                        "Ajuste Hormonal Fase Lutea (Termorregulacion y Sueno)",
                        exp,
-                       "Considerar alza termica por progesterona (+0.3 a +0.5 C), ajustar termorregulacion y luz circadiana (ARCHeR), reforzar B-Complex/magnesio y descartar CO2 alto.");
+                       "Considerar alza termica por progesterona (+0.3 a +0.5 C), ajustar termorregulacion y luz circadiana (ARCHeR), reforzar Complejo B/magnesio y descartar CO2 alto.");
         }
 
         if (s->fase_ciclo == CYCLE_SUPPRESSED &&
@@ -619,10 +619,10 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                        HAZARD_GRAVITY,
                        SYS_CARDIOVASCULAR,
                        ALERT_CAUTION,
-                       "Venous Haemostasis / Zero-T2 / Risk of Bone Changes",
+                       "Hemostasia Venosa / Zero-T2 / Riesgo Óseo",
                        "Supresion Hormonal: Vigilancia de Hemostasia Venosa y Osea",
                        exp,
-                       "Mantener hidratacion >= 100% de la meta para mitigar riesgo protrombotico en microgravedad (Venous Haemostasis), monitorear flujo yugular (Tempus Pro) y sostener ARED/Zero-T2 + Vit D.");
+                       "Mantener hidratacion >= 100% de la meta para mitigar riesgo protrombotico en microgravedad, monitorear flujo yugular (Tempus Pro) y sostener ARED/Zero-T2 + Vitamina D.");
         }
     }
 
@@ -692,7 +692,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
 
     /* Construir resumen_estado breve para la tarjeta estilo Credenciales.jpeg / DibujodePagina.jpeg */
     if (rep->alert_count == 0) {
-        safe_strcpy(rep->resumen_estado, sizeof(rep->resumen_estado), "Nominal");
+        safe_strcpy(rep->resumen_estado, sizeof(rep->resumen_estado), "Normal");
     } else {
         const HealthAlert *top = &rep->alerts[0];
         if (strcmp(top->id_regla, "ENV_HYPERCAPNIA_CAUT") == 0 ||
@@ -713,7 +713,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
         } else if (strcmp(top->id_regla, "EVA_DCS_RISK") == 0) {
             safe_strcpy(rep->resumen_estado, sizeof(rep->resumen_estado), "Riesgo DCS Post-EVA · O2 100%");
         } else if (strcmp(top->id_regla, "HORMONAL_MENORRHAGIA_CRIT") == 0) {
-            safe_strcpy(rep->resumen_estado, sizeof(rep->resumen_estado), "Menorragia / Dismenorrea · NO-GO");
+            safe_strcpy(rep->resumen_estado, sizeof(rep->resumen_estado), "Menorragia / Dismenorrea · No apto");
         } else if (strcmp(top->id_regla, "HORMONAL_MENSTRUAL_CARE") == 0) {
             safe_strcpy(rep->resumen_estado, sizeof(rep->resumen_estado), "Ciclo Menstrual · Suplementar Hierro");
         } else if (strcmp(top->id_regla, "HORMONAL_LUTEAL_EFFECT") == 0) {

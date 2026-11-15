@@ -153,9 +153,9 @@ static cJSON *build_glossary_json(void) {
     add_glossary_item(items, "haz_radiation", "HAZARDS", "PELIGRO 1 · RADIACIÓN",
         "Radiación Espacial (Rayos Cósmicos Galácticos y Tormentas Solares SPE)", "CRITICAL",
         "RADIATION", "IMMUNE",
-        "Nominal < 1.0 mSv/día · Precaución >= 1.0 mSv/día o >= 480 mSv en carrera · Crítico > 2.0 mSv/día, tasa >= 0.5 mSv/h, tormenta solar activa o >= 600 mSv acumulados.",
+        "Normal < 1.0 mSv/día · Precaución >= 1.0 mSv/día o >= 480 mSv en carrera · Crítico > 2.0 mSv/día, tasa >= 0.5 mSv/h, tormenta solar activa o >= 600 mSv acumulados.",
         "Fuera de la magnetósfera terrestre, la tripulación enfrenta Rayos Cósmicos Galácticos (GCR) y Eventos de Partículas Solares (SPE). Provoca daño al ADN, caída inmunitaria aguda, cataratas tempranas y riesgo oncológico y cardiovascular acumulado (límite estándar NASA: 600 mSv de carrera).",
-        "Despliegue inmediato a refugio blindado contra tormentas solares, suspensión total de EVA (NO-GO), dosimetría neutrónica continua (Radi-N2 / CANS) y refuerzo de blindaje con bolsas de agua.",
+        "Despliegue inmediato a refugio blindado contra tormentas solares, suspensión total de EVA (No apto), dosimetría neutrónica continua (Radi-N2 / CANS) y refuerzo de blindaje con bolsas de agua.",
         "CSA — Space Radiation and Its Effects on the Human Body",
         "https://www.asc-csa.gc.ca/eng/astronauts/living-in-space/space-radiation-and-its-effects-on-the-human-body.asp",
         "RAD_SPE_SPIKE RAD_CAREER_LIMIT");
@@ -173,7 +173,7 @@ static cJSON *build_glossary_json(void) {
     add_glossary_item(items, "haz_hostile_env", "HAZARDS", "PELIGRO 3 · AMBIENTE HOSTIL",
         "Ambientes Hostiles y Cerrados (Soporte Vital ECLSS y Microecosistema)", "CRITICAL",
         "HOSTILE_ENV", "RESPIRATORY",
-        "CO2 nominal <= 0.5 kPa · Precaución > 0.5 kPa (+ cefalea >= 4 o reflejos lentos) · Crítico > 0.8 kPa | SpO2 < 94 % o pO2 < 18 kPa (Precaución) · SpO2 < 90 % o pO2 < 15 kPa (Crítico).",
+        "CO2 normal <= 0.5 kPa · Precaución > 0.5 kPa (+ cefalea >= 4 o reflejos lentos) · Crítico > 0.8 kPa | SpO2 < 94 % o pO2 < 18 kPa (Precaución) · SpO2 < 90 % o pO2 < 15 kPa (Crítico).",
         "El hábitat presurizado depende íntegramente del soporte vital ECLSS. Sin convección natural en 0g se forman bolsas de CO2 que inducen hipercapnia (cefalea y lentitud cognitiva). La caída de O2 produce hipoxia tisular y la flora cerrada eleva el riesgo alérgico e infeccioso.",
         "Inspeccionar depurador de CO2 (cartuchos LiOH), verificar presión parcial de O2 en cabina, administrar O2 al 100 % ante hipoxia o síntomas post-EVA y auditar filtros HEPA.",
         "NASA HRP — 5 Hazards of Human Spaceflight",
@@ -226,7 +226,7 @@ static cJSON *build_glossary_json(void) {
         "RADIATION", "IMMUNE",
         "Se activa ante alerta de tormenta solar en cabina, tasa externa >= 0.5 mSv/h o dosis diaria superior a 2.0 mSv.",
         "Durante un evento SPE o pico de radiación solar, los protones energéticos elevan rápidamente la dosis absorbida. El refugio temporal rodeado de agua potable y polietileno atenúa la radiación secundaria.",
-        "Suspender cualquier EVA de inmediato (NO-GO), trasladar a toda la tripulación al refugio blindado, mantener dosimetría activa (Radi-N2 / CANS) y vigilar síntomas tempranos.",
+        "Suspender cualquier EVA de inmediato (No apto), trasladar a toda la tripulación al refugio blindado, mantener dosimetría activa (Radi-N2 / CANS) y vigilar síntomas tempranos.",
         "CSA — Space Radiation and Its Effects on the Human Body",
         "https://www.asc-csa.gc.ca/eng/astronauts/living-in-space/space-radiation-and-its-effects-on-the-human-body.asp",
         "RAD_SPE_SPIKE");
@@ -263,12 +263,12 @@ static cJSON *build_glossary_json(void) {
         "SYM_EVA_JOINT_PAIN SYM_ORTHOSTATIC_DIZZINESS GRAV_CARDIO_VENOUS");
 
     add_glossary_item(items, "sym_countermeasures_bits", "SYMPTOMS", "CLÍNICA 03 · ADHERENCIA",
-        "Contramedidas Diarias: Thigh Cuff, Complejo B, Vitamina D3 y Dieta Veggie", "OK",
+        "Contramedidas Diarias: Bandas en Muslos, Complejo B, Vitamina D3 y Dieta Vegetal Fresca", "OK",
         "GRAVITY", "MUSCULOSKELETAL",
         "Registro diario recomendado de adherencia preventiva según estado neuro-ocular, óseo y nutricional.",
-        "El registro diario verifica cuatro contramedidas esenciales: manguitos de compresión en muslos (SANS), Complejo B (cofactor vascular y hematopoyético), Vitamina D3 (protección ósea) y vegetales frescos del módulo Veggie.",
-        "Mantener Vitamina D3 y Dieta Fresca Veggie de forma continua; añadir Thigh Cuff y Complejo B ante riesgo neuro-ocular SANS o ferropenia.",
-        "NASA — Exercising in Space & Nutrition",
+        "El registro diario verifica cuatro contramedidas esenciales: manguitos de compresión en muslos (SANS), Complejo B (cofactor vascular y hematopoyético), Vitamina D3 (protección ósea) y vegetales frescos de cultivo a bordo.",
+        "Mantener Vitamina D3 y Dieta Vegetal Fresca de forma continua; añadir Bandas en Muslos y Complejo B ante riesgo neuro-ocular SANS o ferropenia.",
+        "NASA — Ejercitación y Nutrición Espacial",
         "https://www.nasa.gov/AtoZ/exercising-in-space/",
         "SYM_THIGH_CUFF_ACTIVE SYM_B_COMPLEX_TAKEN SYM_VIT_D_TAKEN SYM_VEGGIE_FRESH_FOOD");
 
@@ -286,9 +286,9 @@ static cJSON *build_glossary_json(void) {
     add_glossary_item(items, "fem_iron_anemia", "HORMONAL", "SALUD FEMENINA 02 · HIERRO",
         "Balance de Hierro, Prevención de Anemia Espacial y Menorragia", "CRITICAL",
         "GRAVITY", "CARDIOVASCULAR",
-        "Precaución: fase menstrual o flujo moderado/cólico >= 4 sin hierro o baja hidratación · Crítico (NO-GO): flujo abundante con taquicardia, hipotensión (< 95 mmHg), mareo ortostático o cólico >= 8/10.",
+        "Precaución: fase menstrual o flujo moderado/cólico >= 4 sin hierro o baja hidratación · Crítico (No apto): flujo abundante con taquicardia, hipotensión (< 95 mmHg), mareo ortostático o cólico >= 8/10.",
         "En el espacio se produce hemólisis sostenida ('anemia espacial') y contracción plasmática. En tripulantes menstruantes, la pérdida adicional de hierro puede desencadenar ferropenia, taquicardia compensatoria e intolerancia ortostática en EVA.",
-        "Indicar suplementación de Hierro + Complejo B y refuerzo hídrico (+350–500 ml). Ante menorragia o dolor intenso (>= 8/10), suspender EVA (NO-GO) y vigilar hemodinamia.",
+        "Indicar suplementación de Hierro + Complejo B y refuerzo hídrico (+350–500 ml). Ante menorragia o dolor intenso (>= 8/10), suspender EVA (No apto) y vigilar hemodinamia.",
         "CSA — Effects of Space on the Body (Cardiovascular & Blood Volume)",
         "https://www.asc-csa.gc.ca/eng/astronauts/living-in-space/effects-of-space-on-the-body.asp",
         "HORMONAL_MENSTRUAL_CARE HORMONAL_MENORRHAGIA_CRIT");
@@ -315,20 +315,20 @@ static cJSON *build_glossary_json(void) {
 
     /* 5. REGLAS Y UMBRALES */
     add_glossary_item(items, "thresh_score_aptitude", "THRESHOLDS", "UMBRAL 01 · PUNTAJE Y APTITUD",
-        "Cálculo de Puntaje de Salud (0–100) y Aptitud EVA (GO / RESTRICTED / NO-GO)", "OK",
+        "Cálculo de Puntaje de Salud (0–100) y Aptitud EVA (Apto / Restringido / No apto)", "OK",
         "DISTANCE", "CARDIOVASCULAR",
-        "Parte de 100 pts: -25 por cada alerta Crítica, -10 por cada Precaución y hasta -10 por desvíos leves · NO-GO ante cualquier Crítico, tormenta solar, mareo >= 5, cólico >= 8 o sueño < 5.0 h.",
+        "Parte de 100 pts: -25 por cada alerta Crítica, -10 por cada Precaución y hasta -10 por desvíos leves · No apto ante cualquier Crítico, tormenta solar, mareo >= 5, cólico >= 8 o sueño < 5.0 h.",
         "El evaluador clínico a bordo analiza en tiempo real signos vitales, dosis de radiación, atmósfera de cabina, sueño/cognición y salud hormonal, calculando un puntaje integrado de 0 a 100 y la aptitud inmediata para caminata espacial.",
-        "Estado Muy Crítico (Prioridad Total): paciente Crítico con puntaje <= 50 o >= 2 alertas críticas simultáneas requiere atención médica exclusiva inmediata antes de otras operaciones.",
+        "Estado Urgencia: paciente Crítico con puntaje <= 50 o >= 2 alertas críticas simultáneas requiere atención médica prioritaria inmediata.",
         "NASA HRP — 5 Hazards of Human Spaceflight",
         "https://www.nasa.gov/hrp/5-hazards-of-human-spaceflight/",
-        "VERY_CRITICAL APT_GO APT_RESTRICTED APT_NO_GO");
+        "URGENCIA APTO RESTRINGIDO NO APTO");
 
     /* 6. DEFINICIONES DE MEDIDAS Y UNIDADES */
     add_glossary_item(items, "meas_vitals_cardio", "MEASURES", "MEDIDAS 01 · SIGNOS VITALES",
         "Frecuencia Cardíaca (lpm), Presión Arterial (mmHg), SpO2 (%), Temperatura (°C) y Glucosa (mg/dL)", "OK",
         "GRAVITY", "CARDIOVASCULAR",
-        "FC reposo típico: 50–80 lpm · PA sistólica/diastólica: ~110–130 / 70–85 mmHg · SpO2 nominal: >= 95 % · Temp oral: 36.2–37.2 °C · Glucemia: 70–140 mg/dL.",
+        "FC reposo típico: 50–80 lpm · PA sistólica/diastólica: ~110–130 / 70–85 mmHg · SpO2 normal: >= 95 % · Temp oral: 36.2–37.2 °C · Glucemia: 70–140 mg/dL.",
         "FC = frecuencia cardíaca en lpm (latidos por minuto). PA = presión arterial en mmHg (milímetros de mercurio; sistólica de contracción / diastólica de reposo). SpO2 (%) = saturación arterial de oxígeno. °C = temperatura corporal en grados Celsius. mg/dL = glucosa por decilitro de sangre.",
         "Comparar cada medición diaria contra la línea base individual previa al vuelo para detectar hipoxia, hipotensión ortostática, fiebre o estrés metabólico.",
         "NASA — The Human Body in Space",
@@ -338,7 +338,7 @@ static cJSON *build_glossary_json(void) {
     add_glossary_item(items, "meas_vision_rad", "MEASURES", "MEDIDAS 02 · VISIÓN Y RADIACIÓN",
         "Agudeza Visual (escala decimal), Dosis Diaria y Acumulada (mSv) y Tasa de Dosis (mSv/h)", "OK",
         "RADIATION", "OCULAR",
-        "Agudeza base: 1.00 (equivalente 20/20); caída >= 0.15 alerta SANS · Dosis diaria nominal < 1.0 mSv · Límite NASA de carrera: 600 mSv.",
+        "Agudeza base: 1.00 (equivalente 20/20); caída >= 0.15 alerta SANS · Dosis diaria normal < 1.0 mSv · Límite NASA de carrera: 600 mSv.",
         "La agudeza visual se mide en escala decimal (1.00 = visión normal 20/20; valores menores indican pérdida de nitidez por edema ocular SANS). mSv (milisievert) mide dosis equivalente de radiación ionizante ponderada por daño biológico; mSv/h mide la intensidad horaria durante tormentas solares.",
         "Monitorear desviación visual respecto a la base individual y registrar dosimetría diaria y acumulada de misión/carrera tras cada ciclo.",
         "CSA — Space Radiation and Its Effects on the Human Body",
@@ -348,7 +348,7 @@ static cJSON *build_glossary_json(void) {
     add_glossary_item(items, "meas_cabin_kpa", "MEASURES", "MEDIDAS 03 · ATMÓSFERA Y GRAVEDAD",
         "Presiones Parciales de Cabina (kPa) y Nivel de Gravedad (g)", "OK",
         "HOSTILE_ENV", "RESPIRATORY",
-        "Presión total estándar: 101.3 kPa (1 atm) · pO2 nominal: ~21.0 kPa · pCO2 nominal: <= 0.5 kPa · Gravedad: 0g, 1/6g (0.16g), 3/8g (0.38g), 1g.",
+        "Presión total estándar: 101.3 kPa (1 atm) · pO2 normal: ~21.0 kPa · pCO2 normal: <= 0.5 kPa · Gravedad: 0g, 1/6g (0.16g), 3/8g (0.38g), 1g.",
         "kPa (kilopascal) mide presión atmosférica y presión parcial de cada gas (101.3 kPa equivale a 1 atmósfera al nivel del mar). La fracción de g compara la aceleración gravitatoria local con la gravedad terrestre estándar (9.81 m/s²).",
         "Controlar que el CO2 no supere 0.5 kPa y el oxígeno se mantenga sobre 18 kPa para evitar hipercapnia e hipoxia.",
         "NASA HRP — 5 Hazards of Human Spaceflight",
@@ -376,21 +376,21 @@ static cJSON *build_glossary_json(void) {
         "ML KCAL KG MIN PRE_RESP");
 
     add_glossary_item(items, "meas_ops_units", "MEASURES", "MEDIDAS 06 · TIEMPO OPERATIVO Y SEVERIDAD",
-        "Sol / Día de Misión, Latencia de Señal (s), Puntaje (0–100 pts) y Niveles de Severidad", "OK",
+        "Jornada de Registro, Latencia de Señal (s), Puntaje (0–100 pts) y Niveles de Severidad", "OK",
         "DISTANCE", "BEHAVIORAL",
-        "Sol / Día = jornada operativa secuencial · Latencia (s) = retardo de ida en segundos · Puntaje: 0–100 pts · Niveles: OK / PRECAUCIÓN / CRÍTICO / MUY CRÍTICO.",
-        "Un Sol o Día de Misión identifica la jornada cronológica desde el lanzamiento. La latencia en segundos refleja la distancia Tierra–nave. Los niveles de severidad clasifican riesgo clínico: OK (nominal), Precaución (seguimiento), Crítico (NO-GO) y Muy Crítico (emergencia prioritaria).",
-        "En nivel Muy Crítico (puntaje <= 50 o >= 2 alertas críticas), el sistema focaliza de inmediato la atención clínica sobre ese tripulante.",
+        "Jornada = día operativo secuencial · Latencia (s) = retardo de señal en segundos · Puntaje: 0–100 pts · Niveles: NORMAL / PRECAUCIÓN / CRÍTICO / URGENCIA.",
+        "La jornada identifica el día cronológico del registro clínico. La latencia en segundos refleja el retardo de comunicaciones. Los niveles de severidad clasifican el estado médico: Normal (sin anomalías), Precaución (seguimiento), Crítico (No apto) y Urgencia (atención prioritaria).",
+        "En nivel Urgencia (puntaje <= 50 o >= 2 alertas críticas), el sistema destaca al paciente mediante un atajo flotante directo.",
         "NASA HRP — Human Research Program Architecture",
         "https://www.nasa.gov/hrp/research/",
-        "SOL DIA LATENCIA PUNTAJE");
+        "SOL DIA LATENCIA PUNTAJE URGENCIA");
 
     /* 7. SIGLAS Y ACRÓNIMOS */
     add_glossary_item(items, "acro_agencies_ops", "ACRONYMS", "SIGLAS 01 · AGENCIAS Y APTITUD EVA",
-        "NASA HRP · CSA / ASC · EVA · GO / RESTRICTED / NO-GO · LEO", "OK",
+        "CSA / ASC · EVA · Apto / Restringido / No apto · LEO", "OK",
         "DISTANCE", "CARDIOVASCULAR",
         "Agencias espaciales, actividades extravehiculares y semáforo operativo de tripulación.",
-        "NASA HRP: Programa de Investigación Humana de la NASA. CSA / ASC: Agencia Espacial Canadiense. EVA: Actividad Extravehicular (caminata espacial). GO / RESTRICTED / NO-GO: Apto / Con restricciones / No apto para EVA. LEO: Órbita Terrestre Baja.",
+        "CSA / ASC: Agencia Espacial Canadiense. EVA: Actividad Extravehicular (caminata espacial). Apto / Restringido / No apto: niveles de autorización médica para salida EVA. LEO: Órbita Terrestre Baja.",
         "Consultar siempre la aptitud EVA antes de autorizar salida por esclusa o pilotaje manual.",
         "NASA HRP — 5 Hazards of Human Spaceflight",
         "https://www.nasa.gov/hrp/5-hazards-of-human-spaceflight/",
@@ -466,7 +466,7 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
     /* 1. GET /api/defaults */
     if (mg_http_match_uri(hm, "/api/defaults")) {
         if (!method_is(hm, "GET")) {
-            reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+            reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
             return;
         }
         reply_json_obj(c, 200, baseline_to_json(&state->defaults, 1));
@@ -476,7 +476,7 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
     /* 1b. GET /api/glossary */
     if (mg_http_match_uri(hm, "/api/glossary")) {
         if (!method_is(hm, "GET")) {
-            reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+            reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
             return;
         }
         reply_json_obj(c, 200, build_glossary_json());
@@ -486,7 +486,7 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
     /* 1c. POST /api/avatars */
     if (mg_http_match_uri(hm, "/api/avatars")) {
         if (!method_is(hm, "POST")) {
-            reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+            reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
             return;
         }
         cJSON *body = parse_req_body(hm);
@@ -579,14 +579,14 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
             reply_json_obj(c, 201, build_mission_detail_json(state, saved));
             return;
         }
-        reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+        reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
         return;
     }
 
     /* 5. PUT /api/missions/:id/env */
     if (mg_match(hm->uri, mg_str("/api/missions/*/env"), caps)) {
         if (!method_is(hm, "PUT") && !method_is(hm, "POST")) {
-            reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+            reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
             return;
         }
         char mid[32];
@@ -636,7 +636,7 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
     /* 6. POST /api/missions/:id/simulate */
     if (mg_match(hm->uri, mg_str("/api/missions/*/simulate"), caps)) {
         if (!method_is(hm, "POST")) {
-            reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+            reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
             return;
         }
         char mid[32];
@@ -683,7 +683,7 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
     /* 4. GET /api/missions/:id */
     if (mg_match(hm->uri, mg_str("/api/missions/*"), caps)) {
         if (!method_is(hm, "GET")) {
-            reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+            reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
             return;
         }
         char mid[32];
@@ -765,14 +765,14 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
             reply_json_obj(c, 201, astronaut_to_json(target, 1));
             return;
         }
-        reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+        reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
         return;
     }
 
     /* 12. POST /api/astronauts/:id/samples */
     if (mg_match(hm->uri, mg_str("/api/astronauts/*/samples"), caps)) {
         if (!method_is(hm, "POST")) {
-            reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+            reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
             return;
         }
         char aid[32];
@@ -828,7 +828,7 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
     /* 13. GET /api/astronauts/:id/export */
     if (mg_match(hm->uri, mg_str("/api/astronauts/*/export"), caps)) {
         if (!method_is(hm, "GET")) {
-            reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+            reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
             return;
         }
         char aid[32];
@@ -894,6 +894,16 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
                     rprev->valuedouble < 0.0 || rprev->valuedouble > 10000.0) {
                     cJSON_Delete(body);
                     reply_error(c, 400, ERR_INVALID_RANGE, "radiacion_previa_msv fuera de rango");
+                    return;
+                }
+            }
+
+            const cJSON *rmis = cJSON_GetObjectItemCaseSensitive(body, "radiacion_mision_msv");
+            if (rmis) {
+                if (!cJSON_IsNumber(rmis) || isnan(rmis->valuedouble) || isinf(rmis->valuedouble) ||
+                    rmis->valuedouble < 0.0 || rmis->valuedouble > 10000.0) {
+                    cJSON_Delete(body);
+                    reply_error(c, 400, ERR_INVALID_RANGE, "radiacion_mision_msv fuera de rango");
                     return;
                 }
             }
@@ -980,6 +990,9 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
             if (rprev) {
                 a->radiacion_previa_msv = (float)rprev->valuedouble;
             }
+            if (rmis) {
+                a->radiacion_mision_msv = (float)rmis->valuedouble;
+            }
 
             if (mid_it && strcmp(a->mission_id, mid_it->valuestring) != 0) {
                 Mission *old_m = state_find_mission(state, a->mission_id);
@@ -1029,7 +1042,7 @@ void server_http_handler(struct mg_connection *c, int ev, void *ev_data) {
             return;
         }
 
-        reply_error(c, 405, ERR_INVALID_RANGE, "Method not allowed");
+        reply_error(c, 405, ERR_INVALID_RANGE, "Método no permitido");
         return;
     }
 

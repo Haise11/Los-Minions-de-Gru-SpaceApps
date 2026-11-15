@@ -210,6 +210,9 @@ static void test_rule1_radiation_hazards(void) {
     evaluate_astronaut(&a, &env);
     assert(a.report.global_status == ALERT_CRITICAL);
     assert(a.report.eva_aptitude == APT_NO_GO);
+    assert(strcmp(aptitude_to_str(APT_GO), "Apto") == 0);
+    assert(strcmp(aptitude_to_str(APT_RESTRICTED), "Restringido") == 0);
+    assert(strcmp(aptitude_to_str(APT_NO_GO), "No apto") == 0);
     assert(has_alert_rule(&a.report, "RAD_SPE_SPIKE", ALERT_CRITICAL));
 
     /* Acumulado de carrera >= 480 mSv (Caution) y >= 600 mSv (Critical) */
@@ -294,6 +297,9 @@ static void test_rule4_dcs_eva(void) {
     evaluate_astronaut(&a, &env);
     assert(has_alert_rule(&a.report, "EVA_DCS_RISK", ALERT_CRITICAL));
     assert(a.report.eva_aptitude == APT_NO_GO);
+    assert(strcmp(aptitude_to_str(APT_GO), "Apto") == 0);
+    assert(strcmp(aptitude_to_str(APT_RESTRICTED), "Restringido") == 0);
+    assert(strcmp(aptitude_to_str(APT_NO_GO), "No apto") == 0);
 }
 
 static void test_rule5_cardio_bone_vestibular(void) {
@@ -320,6 +326,9 @@ static void test_rule5_cardio_bone_vestibular(void) {
     assert(has_alert_rule(&a.report, "GRAV_BONE_CAUT", ALERT_CAUTION));
     assert(has_alert_rule(&a.report, "GRAV_VESTIBULAR_DYNAMIC", ALERT_CAUTION));
     assert(a.report.eva_aptitude == APT_NO_GO);
+    assert(strcmp(aptitude_to_str(APT_GO), "Apto") == 0);
+    assert(strcmp(aptitude_to_str(APT_RESTRICTED), "Restringido") == 0);
+    assert(strcmp(aptitude_to_str(APT_NO_GO), "No apto") == 0);
 
     /* Verificar que el promedio movil de 3 dias de hidratacion (hid_3d < 75%) tambien activa GRAV_CARDIO_VENOUS
      * incluso si el dia mas reciente supera ligeramente el 75% (ej. 1900 ml sobre 2500 ml = 76%) */
@@ -608,6 +617,9 @@ static void test_rule9_female_hormonal_physiology(void) {
     evaluate_astronaut(&a, &env);
     assert(has_alert_rule(&a.report, "HORMONAL_MENORRHAGIA_CRIT", ALERT_CRITICAL));
     assert(a.report.eva_aptitude == APT_NO_GO);
+    assert(strcmp(aptitude_to_str(APT_GO), "Apto") == 0);
+    assert(strcmp(aptitude_to_str(APT_RESTRICTED), "Restringido") == 0);
+    assert(strcmp(aptitude_to_str(APT_NO_GO), "No apto") == 0);
 
     /* 4. Fase lutea con termogenesis fisiologica -> HORMONAL_LUTEAL_EFFECT */
     sample_from_baseline(&s, &a.baseline, 3);
@@ -729,12 +741,12 @@ static void test_http_rest_api_and_static_files(void) {
     snprintf(url, sizeof(url), "http://127.0.0.1:%d", port);
     assert(mg_http_listen(&mgr, url, server_http_handler, &state) != NULL);
 
-    char resp[65536];
+    static char resp[262144];
 
     /* 1. Archivos estaticos */
     assert(send_local_http_req(&mgr, port, "GET", "/", NULL, resp, sizeof(resp)) == 200);
     assert(strlen(resp) < sizeof(resp) - 100);
-    assert(strstr(resp, "NASA HRP") != NULL);
+    assert(strstr(resp, "MONITOR MÉDICO DE TRIPULACIÓN") != NULL);
     assert(send_local_http_req(&mgr, port, "GET", "/styles.css", NULL, resp, sizeof(resp)) == 200);
     assert(send_local_http_req(&mgr, port, "GET", "/app.js", NULL, resp, sizeof(resp)) == 200);
     assert(send_local_http_req(&mgr, port, "GET", "/assets/avatars/astro_01.svg", NULL, resp, sizeof(resp)) == 200);
@@ -853,6 +865,15 @@ static void test_http_rest_api_and_static_files(void) {
 
     assert(send_local_http_req(&mgr, port, "PUT", "/api/astronauts/astro_t1",
                                "{\"baseline\":{\"pa_sis_base\":110,\"pa_dia_base\":120}}", resp, sizeof(resp)) == 400);
+
+    assert(send_local_http_req(&mgr, port, "PUT", "/api/astronauts/astro_t1",
+                               "{\"radiacion_mision_msv\":-5}", resp, sizeof(resp)) == 400);
+
+    assert(send_local_http_req(&mgr, port, "PUT", "/api/astronauts/astro_t1",
+                               "{\"nombre\":\"Dra. Test Editada\",\"sexo\":\"F\",\"rol\":\"Oficial Medica\",\"radiacion_previa_msv\":22.5,\"radiacion_mision_msv\":3.25,\"baseline\":{\"fc_base\":68}}",
+                               resp, sizeof(resp)) == 200);
+    assert(strstr(resp, "Dra. Test Editada") != NULL);
+    assert(strstr(resp, "\"sexo\":\"F\"") != NULL);
 
     /* 5. POST /api/missions y PUT /api/missions/artemis_sim/env (validaciones y cambio de mision en re-import) */
     assert(send_local_http_req(&mgr, port, "POST", "/api/missions",
