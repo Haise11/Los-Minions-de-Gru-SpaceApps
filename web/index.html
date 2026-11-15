@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monitor Médico de Tripulación</title>
+  <title>P.U.L.S.O. — Monitor Médico de Tripulación</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -14,58 +17,53 @@
            title="Clic para plegar o desplegar el panel OPCIONES"
            onclick="toggleSidebar()"
            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSidebar();}">
-        <span class="bars-icon">|||</span>
+        <span class="bars-icon" aria-hidden="true"><span></span><span></span><span></span></span>
         <span class="options-title">OPCIONES</span>
-        <span id="sidebar-chevron" class="sidebar-chevron" aria-hidden="true">◂</span>
       </div>
 
       <nav class="sidebar-nav">
-        <button id="nav-cargar" class="nav-btn" type="button" onclick="switchOptionView('cargar')" title="CARGAR">
-          <span class="nav-btn-icon">＋</span>
+        <button id="nav-mostrar" class="nav-btn active" type="button" data-abbr="TR" onclick="switchOptionView('mostrar', true)" title="TRIPULACIÓN — Credenciales y Panel Clínico">
           <div class="nav-btn-text">
-            <strong>CARGAR</strong>
+            <strong>TRIPULACIÓN</strong>
+            <small>Credenciales y Estado Clínico</small>
           </div>
         </button>
 
-        <button id="nav-mostrar" class="nav-btn active" type="button" onclick="switchOptionView('mostrar')" title="MOSTRAR — Tripulación y Credenciales">
-          <span class="nav-btn-icon">◈</span>
+        <button id="nav-checkin" class="nav-btn" type="button" data-abbr="CK" onclick="switchOptionView('checkin')" title="CHECK IN — Control Diario de Tripulación">
           <div class="nav-btn-text">
-            <strong>MOSTRAR</strong>
-            <small>Tripulación y Credenciales</small>
+            <strong>CHECK IN</strong>
+            <small>Control Diario y Reflejos</small>
           </div>
         </button>
 
-        <button id="nav-modificar" class="nav-btn" type="button" onclick="switchOptionView('modificar')" title="MODIFICAR ASTRONAUTA — Editar Datos, Exportar y Eliminar">
-          <span class="nav-btn-icon">✎</span>
-          <div class="nav-btn-text">
-            <strong>MODIFICAR ASTRONAUTA</strong>
-            <small>Editar Datos · Bitácora · Eliminar</small>
-          </div>
-        </button>
-
-        <button id="nav-promedio" class="nav-btn" type="button" onclick="switchOptionView('promedio')" title="PROMEDIO DE SALUD — Resumen Clínico y Cabina">
-          <span class="nav-btn-icon">♥</span>
+        <button id="nav-promedio" class="nav-btn" type="button" data-abbr="PS" onclick="switchOptionView('promedio')" title="PROMEDIO DE SALUD — Resumen Clínico y Cabina">
           <div class="nav-btn-text">
             <strong>PROMEDIO DE SALUD</strong>
             <small>Resumen Clínico y Cabina</small>
           </div>
         </button>
 
-        <button id="nav-glosario" class="nav-btn" type="button" onclick="switchOptionView('glosario')" title="GLOSARIO — Protocolos, Síntomas, Medidas y Siglas">
-          <span class="nav-btn-icon">📖</span>
+        <button id="nav-glosario" class="nav-btn" type="button" data-abbr="GL" onclick="switchOptionView('glosario')" title="GLOSARIO — Protocolos, Síntomas, Medidas y Siglas">
           <div class="nav-btn-text">
             <strong>GLOSARIO</strong>
             <small>Protocolos · Medidas · Siglas</small>
           </div>
         </button>
-      </nav>
 
-      <div class="sidebar-footer">
-        <div class="offline-indicator">
-          <span class="dot-online"></span> 100% SIN CONEXIÓN · SISTEMA AUTÓNOMO
-        </div>
-        <div id="last-sync-label" class="sync-time">Sincronizado localmente</div>
-      </div>
+        <button id="nav-cargar" class="nav-btn" type="button" data-abbr="CA" onclick="switchOptionView('cargar')" title="CARGAR ASTRONAUTA — Nuevo o Cargar con JSON">
+          <div class="nav-btn-text">
+            <strong>CARGAR ASTRONAUTA</strong>
+            <small>Nuevo / Cargar con JSON</small>
+          </div>
+        </button>
+
+        <button id="nav-modificar" class="nav-btn" type="button" data-abbr="MA" onclick="switchOptionView('modificar')" title="MODIFICAR ASTRONAUTA — Editar Datos, Foto, Bitácora y Eliminar">
+          <div class="nav-btn-text">
+            <strong>MODIFICAR ASTRONAUTA</strong>
+            <small>Editar Datos · Foto · Bitácora</small>
+          </div>
+        </button>
+      </nav>
     </aside>
 
     <!-- COLUMNA DERECHA: CABECERA COMBINADA + VISTAS PRINCIPALES -->
@@ -73,7 +71,12 @@
       <!-- Barra superior: Titulo general combinado con el boton desplegable de Filtros -->
       <header id="main-topbar" class="mission-topbar">
         <div class="topbar-title-col">
-          <h1 id="main-page-title" class="mission-title">MONITOR MÉDICO DE TRIPULACIÓN</h1>
+          <div class="brand-title-row">
+            <span class="brand-pulse-mark" aria-hidden="true"></span>
+            <h1 id="main-page-title" class="mission-title">P.U.L.S.O.</h1>
+            <span class="brand-divider" aria-hidden="true"></span>
+            <span class="brand-subtitle">Programa Unificado para La Salud Óptima</span>
+          </div>
         </div>
 
         <div id="topbar-filter-area" class="topbar-filter-area">
@@ -175,10 +178,6 @@
             <div class="detail-ej-cred">
               <div class="detail-avatar-wrap">
                 <img id="detail-avatar" class="detail-avatar-img" src="assets/avatars/astro_01.svg" alt="Avatar" onerror="this.onerror=null;this.src='assets/avatars/astro_01.svg'" />
-                <input type="file" id="detail-avatar-upload" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="hidden" onchange="onDetailAvatarSelected(event)" />
-                <button type="button" class="avatar-upload-mini-btn" onclick="document.getElementById('detail-avatar-upload').click()" title="Subir nueva foto personalizada para este astronauta">
-                  📷 Cambiar Foto
-                </button>
               </div>
               <div class="detail-id-block">
                 <div class="detail-tag-row">
@@ -208,48 +207,48 @@
               <div class="body-map-container">
                 <svg id="body-map-svg" class="body-svg" viewBox="0 0 460 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa corporal anatómico interactivo y expresión de síntomas">
                   <!-- 6. Halo de Radiación Externa alrededor del cuerpo -->
-                  <ellipse id="svg-sys-6" class="body-zone body-part-clickable" data-sys="6" data-part="radiation" cx="230" cy="222" rx="116" ry="194" fill="none" stroke="#22c55e" stroke-width="3.8" stroke-dasharray="8 5" opacity="0.86"/>
+                  <ellipse id="svg-sys-6" class="body-zone body-part-clickable" data-sys="6" data-part="radiation" cx="230" cy="224" rx="116" ry="206" fill="none" stroke="#4ADE80" stroke-width="3.8" stroke-dasharray="8 5" opacity="0.86"/>
 
                   <!-- ============================================================
-                       SILUETA ANATÓMICA SEGMENTADA (inspirada en referencia)
+                       SILUETA ANATÓMICA SEGMENTADA (Proporciones reales · M/F dinámico)
                        ============================================================ -->
-                  <g class="body-silhouette-parts" stroke="#cbd5e1" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
+                  <g class="body-silhouette-parts" stroke="#D4D4D4" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
                     <!-- Cabeza -->
-                    <path id="seg-head" class="body-zone body-part-clickable" data-sys="1" data-part="head" d="M230 34 C213 34 205 46 206 63 C206 74 211 86 218 91 L242 91 C249 86 254 74 254 63 C255 46 247 34 230 34 Z" fill="#102542"/>
+                    <path id="seg-head" class="body-zone body-part-clickable" data-sys="1" data-part="head" d="M230 24 C215 24 208 35 209 50 C209 60 214 69 220 73 L240 73 C246 69 251 60 251 50 C252 35 245 24 230 24 Z" fill="#222222"/>
                     <!-- Cuello -->
-                    <path id="seg-neck" class="body-zone body-part-clickable" data-sys="4" data-part="neck" d="M219 94 L241 94 L244 108 L216 108 Z" fill="#0f213b"/>
+                    <path id="seg-neck" class="body-zone body-part-clickable" data-sys="4" data-part="neck" d="M220 75 L240 75 L244 87 L216 87 Z" fill="#1E1E1E"/>
 
                     <!-- Tórax / Pecho Superior -->
-                    <path id="seg-chest" class="body-zone body-part-clickable" data-sys="2" data-part="chest" d="M194 111 L266 111 L262 182 Q230 170 198 182 Z" fill="#0f233e"/>
-                    <!-- Abdomen -->
-                    <path id="seg-abdomen" class="body-zone body-part-clickable" data-sys="4" data-part="abdomen" d="M198 185 Q230 173 262 185 L259 238 Q230 245 201 238 Z" fill="#0c1d35"/>
+                    <path id="seg-chest" class="body-zone body-part-clickable" data-sys="2" data-part="chest" d="M188 90 L272 90 L262 152 Q230 144 198 152 Z" fill="#202020"/>
+                    <!-- Abdomen Corto -->
+                    <path id="seg-abdomen" class="body-zone body-part-clickable" data-sys="4" data-part="abdomen" d="M198 154 Q230 146 262 154 L259 184 Q230 189 201 184 Z" fill="#181818"/>
                     <!-- Pelvis / Cadera -->
-                    <path id="seg-pelvis" class="body-zone body-part-clickable" data-sys="4" data-part="pelvis" d="M201 241 Q230 248 259 241 L264 274 L242 292 L218 292 L196 274 Z" fill="#0e223d"/>
+                    <path id="seg-pelvis" class="body-zone body-part-clickable" data-sys="4" data-part="pelvis" d="M201 187 Q230 192 259 187 L263 207 L241 219 L219 219 L197 207 Z" fill="#1D1D1D"/>
 
                     <!-- Extremidades Superiores (3. Osteomuscular - Segmentos) -->
                     <g id="svg-sys-3-arms" class="body-zone body-part-clickable" data-sys="3" data-part="arms">
                       <!-- Hombro / Brazo superior izq y der -->
-                      <path class="limb-seg" d="M191 112 L173 122 L162 184 L179 187 L193 136 Z" fill="#132b4d" stroke="#22c55e"/>
-                      <path class="limb-seg" d="M269 112 L287 122 L298 184 L281 187 L267 136 Z" fill="#132b4d" stroke="#22c55e"/>
+                      <path class="limb-seg" d="M185 91 L167 101 L157 154 L173 156 L187 114 Z" fill="#242424" stroke="#4ADE80"/>
+                      <path class="limb-seg" d="M275 91 L293 101 L303 154 L287 156 L273 114 Z" fill="#242424" stroke="#4ADE80"/>
                       <!-- Antebrazo izq y der -->
-                      <path class="limb-seg" d="M161 189 L178 192 L167 248 L151 244 Z" fill="#102442" stroke="#22c55e"/>
-                      <path class="limb-seg" d="M299 189 L282 192 L293 248 L309 244 Z" fill="#102442" stroke="#22c55e"/>
+                      <path class="limb-seg" d="M156 159 L172 161 L162 212 L147 209 Z" fill="#1F1F1F" stroke="#4ADE80"/>
+                      <path class="limb-seg" d="M304 159 L288 161 L298 212 L313 209 Z" fill="#1F1F1F" stroke="#4ADE80"/>
                       <!-- Manos izq y der -->
-                      <path class="limb-seg" d="M150 248 L166 252 L160 278 L142 272 L139 258 Z" fill="#0f203b" stroke="#22c55e"/>
-                      <path class="limb-seg" d="M310 248 L294 252 L300 278 L318 272 L321 258 Z" fill="#0f203b" stroke="#22c55e"/>
+                      <path class="limb-seg" d="M146 215 L161 218 L156 240 L140 236 L137 224 Z" fill="#1A1A1A" stroke="#4ADE80"/>
+                      <path class="limb-seg" d="M314 215 L299 218 L304 240 L320 236 L323 224 Z" fill="#1A1A1A" stroke="#4ADE80"/>
                     </g>
 
-                    <!-- Extremidades Inferiores (3. Osteomuscular - Muslos, Piernas y Pies) -->
+                    <!-- Extremidades Inferiores Largas (3. Osteomuscular - Muslos, Piernas y Pies) -->
                     <g id="svg-sys-3-legs" class="body-zone body-part-clickable" data-sys="3" data-part="legs">
                       <!-- Muslos -->
-                      <path class="limb-seg" d="M196 277 L218 295 L224 348 L200 348 Z" fill="#132b4d" stroke="#22c55e"/>
-                      <path class="limb-seg" d="M264 277 L242 295 L236 348 L260 348 Z" fill="#132b4d" stroke="#22c55e"/>
+                      <path class="limb-seg" d="M197 210 L219 222 L224 316 L200 316 Z" fill="#242424" stroke="#4ADE80"/>
+                      <path class="limb-seg" d="M263 210 L241 222 L236 316 L260 316 Z" fill="#242424" stroke="#4ADE80"/>
                       <!-- Pantorrillas -->
-                      <path class="limb-seg" d="M201 352 L224 352 L221 404 L204 404 Z" fill="#102442" stroke="#22c55e"/>
-                      <path class="limb-seg" d="M259 352 L236 352 L239 404 L256 404 Z" fill="#102442" stroke="#22c55e"/>
+                      <path class="limb-seg" d="M200 320 L224 320 L221 407 L204 407 Z" fill="#1F1F1F" stroke="#4ADE80"/>
+                      <path class="limb-seg" d="M260 320 L236 320 L239 407 L256 407 Z" fill="#1F1F1F" stroke="#4ADE80"/>
                       <!-- Pies -->
-                      <path class="limb-seg" d="M203 407 L222 407 L223 418 L196 418 Z" fill="#0f203b" stroke="#22c55e"/>
-                      <path class="limb-seg" d="M257 407 L238 407 L237 418 L264 418 Z" fill="#0f203b" stroke="#22c55e"/>
+                      <path class="limb-seg" d="M204 410 L221 410 L222 423 L196 423 Z" fill="#1A1A1A" stroke="#4ADE80"/>
+                      <path class="limb-seg" d="M256 410 L239 410 L238 423 L264 423 Z" fill="#1A1A1A" stroke="#4ADE80"/>
                     </g>
                   </g>
 
@@ -258,45 +257,45 @@
                        ============================================================ -->
                   <!-- 5. Conducta, Cerebro y Sueño (Córtex cerebral superior) -->
                   <path id="svg-sys-5" class="body-zone body-part-clickable" data-sys="5" data-part="brain"
-                        d="M212 52 C212 40 248 40 248 52 C248 57 240 59 230 58 C220 59 212 57 212 52 Z"
-                        fill="#22c55e" stroke="#064e3b" stroke-width="1.6" opacity="0.92"/>
+                        d="M215 39 C215 29 245 29 245 39 C245 43 238 45 230 44 C222 45 215 43 215 39 Z"
+                        fill="#4ADE80" stroke="#14532d" stroke-width="1.6" opacity="0.92"/>
 
                   <!-- 1. Neuro-Ocular (Ojos anatómicos sobre rostro) -->
                   <g id="svg-sys-1" class="body-zone body-part-clickable" data-sys="1" data-part="eyes">
-                    <path class="eye-part" d="M212 67 Q219 62 226 67 Q219 72 212 67 Z" fill="#22c55e" stroke="#064e3b" stroke-width="1.4"/>
-                    <path class="eye-part" d="M234 67 Q241 62 248 67 Q241 72 234 67 Z" fill="#22c55e" stroke="#064e3b" stroke-width="1.4"/>
-                    <circle cx="219" cy="67" r="2.2" fill="#052e16"/>
-                    <circle cx="241" cy="67" r="2.2" fill="#052e16"/>
+                    <path class="eye-part" d="M214 53 Q220 48.5 226 53 Q220 57.5 214 53 Z" fill="#4ADE80" stroke="#14532d" stroke-width="1.4"/>
+                    <path class="eye-part" d="M234 53 Q240 48.5 246 53 Q240 57.5 234 53 Z" fill="#4ADE80" stroke="#14532d" stroke-width="1.4"/>
+                    <circle cx="220" cy="53" r="2" fill="#052e16"/>
+                    <circle cx="240" cy="53" r="2" fill="#052e16"/>
                   </g>
 
                   <!-- 2. Respiratorio / EVA (Pulmones anatómicos en cavidad torácica) -->
                   <g id="svg-sys-2" class="body-zone body-part-clickable" data-sys="2" data-part="lungs">
                     <!-- Tráquea -->
-                    <path d="M230 100 L230 122 M230 122 L219 130 M230 122 L241 130" stroke="#94a3b8" stroke-width="2" fill="none" stroke-linecap="round"/>
+                    <path d="M230 85 L230 103 M230 103 L220 110 M230 103 L240 110" stroke="#A3A3A3" stroke-width="2" fill="none" stroke-linecap="round"/>
                     <!-- Pulmón Izquierdo -->
                     <path id="svg-sys-2-l" class="lung-lobe"
-                          d="M225 123 C213 121 203 132 201 151 C200 165 204 173 216 173 C223 173 227 167 227 156 L227 131 Z"
-                          fill="#22c55e" stroke="#0f172a" stroke-width="1.5" opacity="0.72"/>
+                          d="M225 103 C214 101 206 111 204 126 C203 137 207 143 217 143 C223 143 227 138 227 129 L227 109 Z"
+                          fill="#4ADE80" stroke="#101010" stroke-width="1.5" opacity="0.72"/>
                     <!-- Pulmón Derecho -->
                     <path id="svg-sys-2-r" class="lung-lobe"
-                          d="M235 123 C247 121 257 132 259 151 C260 165 256 173 244 173 C237 173 233 167 233 156 L233 131 Z"
-                          fill="#22c55e" stroke="#0f172a" stroke-width="1.5" opacity="0.72"/>
+                          d="M235 103 C246 101 254 111 256 126 C257 137 253 143 243 143 C237 143 233 138 233 129 L233 109 Z"
+                          fill="#4ADE80" stroke="#101010" stroke-width="1.5" opacity="0.72"/>
                   </g>
 
                   <!-- 0. Cardiovascular: Corazón DENTRO de la cavidad pulmonar, encapsulado con borde más oscuro -->
                   <g id="svg-sys-0" class="body-zone body-part-clickable" data-sys="0" data-part="heart">
                     <!-- Cápsula externa oscura que resalta el corazón dentro de los pulmones -->
-                    <circle id="svg-heart-capsule" cx="233" cy="149" r="14.5" fill="rgba(4, 24, 16, 0.72)" stroke="#064e3b" stroke-width="2.4"/>
+                    <circle id="svg-heart-capsule" cx="233" cy="124" r="13.5" fill="rgba(5, 46, 22, 0.72)" stroke="#14532d" stroke-width="2.4"/>
                     <!-- Silueta anatómica del corazón -->
                     <path id="svg-heart-shape"
-                          d="M233 159 C233 159 221.5 151.8 221.5 144.8 C221.5 141.1 224.5 138.5 227.9 138.5 C230.2 138.5 232 139.8 233 141.5 C234 139.8 235.8 138.5 238.1 138.5 C241.5 138.5 244.5 141.1 244.5 144.8 C244.5 151.8 233 159 233 159 Z"
-                          fill="#22c55e" stroke="#052e16" stroke-width="2.4" stroke-linejoin="round"/>
+                          d="M233 133 C233 133 222.5 126.5 222.5 120 C222.5 116.7 225.2 114.3 228.3 114.3 C230.4 114.3 232.1 115.5 233 117 C233.9 115.5 235.6 114.3 237.7 114.3 C240.8 114.3 243.5 116.7 243.5 120 C243.5 126.5 233 133 233 133 Z"
+                          fill="#4ADE80" stroke="#052e16" stroke-width="2.4" stroke-linejoin="round"/>
                   </g>
 
-                  <!-- 4. Inmune y Metabólico (Estómago / Abdomen) -->
+                  <!-- 4. Inmune y Metabólico (Estómago / Abdomen Corto) -->
                   <path id="svg-sys-4" class="body-zone body-part-clickable" data-sys="4" data-part="stomach"
-                        d="M225 190 C216 190 212 200 212 211 C212 225 223 231 236 229 C247 227 251 217 248 206 C246 198 238 197 234 203 C232 207 229 207 228 201 Z"
-                        fill="#22c55e" stroke="#064e3b" stroke-width="1.6" opacity="0.9"/>
+                        d="M225 156 C217 156 213 163 213 171 C213 180 222 184 234 183 C243 182 246 174 244 166 C242 160 236 160 233 164 C231 167 228 167 227 163 Z"
+                        fill="#4ADE80" stroke="#14532d" stroke-width="1.6" opacity="0.9"/>
 
                   <!-- ============================================================
                        EXPRESIÓN VISUAL DE SÍNTOMAS PARTICULARES EN EL DIBUJO
@@ -304,84 +303,84 @@
                   <g id="body-symptom-overlays" pointer-events="none">
                     <!-- Dolor de cabeza: ondas en sienes y frente -->
                     <g id="sym-overlay-headache" class="sym-overlay hidden">
-                      <path d="M196 48 L203 52 L197 57 M264 48 L257 52 L263 57" stroke="#ffd000" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-                      <path d="M214 31 Q230 21 246 31" stroke="#ffd000" stroke-width="2.4" fill="none" stroke-dasharray="3 3"/>
+                      <path d="M200 36 L206 40 L201 44 M260 36 L254 40 L259 44" stroke="#FBBF24" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+                      <path d="M216 21 Q230 13 244 21" stroke="#FBBF24" stroke-width="2.4" fill="none" stroke-dasharray="3 3"/>
                     </g>
                     <!-- Ojos / SANS: anillos de presión neuro-ocular -->
                     <g id="sym-overlay-vision" class="sym-overlay hidden">
-                      <circle cx="219" cy="67" r="9" fill="none" stroke="#ff2a4b" stroke-width="2" stroke-dasharray="3 2"/>
-                      <circle cx="241" cy="67" r="9" fill="none" stroke="#ff2a4b" stroke-width="2" stroke-dasharray="3 2"/>
+                      <circle cx="220" cy="53" r="8" fill="none" stroke="#F87171" stroke-width="2" stroke-dasharray="3 2"/>
+                      <circle cx="240" cy="53" r="8" fill="none" stroke="#F87171" stroke-width="2" stroke-dasharray="3 2"/>
                     </g>
                     <!-- Mareo Vestibular / Oído: ondas de vértigo junto a los oídos -->
                     <g id="sym-overlay-vestibular" class="sym-overlay hidden">
-                      <path d="M198 63 A8 8 0 0 0 198 75 M193 60 A13 13 0 0 0 193 78" stroke="#38bdf8" stroke-width="2" fill="none" stroke-linecap="round"/>
-                      <path d="M262 63 A8 8 0 0 1 262 75 M267 60 A13 13 0 0 1 267 78" stroke="#38bdf8" stroke-width="2" fill="none" stroke-linecap="round"/>
+                      <path d="M201 49 A7 7 0 0 0 201 60 M196 46 A12 12 0 0 0 196 63" stroke="#D4D4D4" stroke-width="2" fill="none" stroke-linecap="round"/>
+                      <path d="M259 49 A7 7 0 0 1 259 60 M264 46 A12 12 0 0 1 264 63" stroke="#D4D4D4" stroke-width="2" fill="none" stroke-linecap="round"/>
                     </g>
                     <!-- Fatiga / Sueño / Estrés: ondas craneales superiores -->
                     <g id="sym-overlay-sleep" class="sym-overlay hidden">
-                      <path d="M214 25 Q222 18 230 25 T246 25" stroke="#c084fc" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                      <path d="M216 17 Q223 11 230 17 T244 17" stroke="#D4D4D4" stroke-width="2.2" fill="none" stroke-linecap="round"/>
                     </g>
                     <!-- Respiratorio: pulso bronquial en ambos pulmones -->
                     <g id="sym-overlay-respiratory" class="sym-overlay hidden">
-                      <path d="M216 142 L209 154 M218 152 L212 162 M246 142 L253 154 M244 152 L250 162" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-                      <circle cx="213" cy="150" r="14" fill="none" stroke="#ff2a4b" stroke-width="1.8" stroke-dasharray="3 3"/>
-                      <circle cx="247" cy="150" r="14" fill="none" stroke="#ff2a4b" stroke-width="1.8" stroke-dasharray="3 3"/>
+                      <path d="M217 118 L211 129 M219 127 L213 135 M245 118 L251 129 M243 127 L249 135" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                      <circle cx="214" cy="124" r="13" fill="none" stroke="#F87171" stroke-width="1.8" stroke-dasharray="3 3"/>
+                      <circle cx="246" cy="124" r="13" fill="none" stroke="#F87171" stroke-width="1.8" stroke-dasharray="3 3"/>
                     </g>
                     <!-- Cardio: onda ECG y pulso alrededor del corazón encapsulado -->
                     <g id="sym-overlay-cardio" class="sym-overlay hidden">
-                      <circle cx="233" cy="149" r="18" fill="none" stroke="#ff2a4b" stroke-width="2" stroke-dasharray="4 3"/>
-                      <path d="M220 149 L226 149 L229 142 L233 156 L237 146 L240 149 L246 149" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                      <circle cx="233" cy="124" r="17" fill="none" stroke="#F87171" stroke-width="2" stroke-dasharray="4 3"/>
+                      <path d="M221 124 L226 124 L229 118 L233 130 L237 121 L240 124 L245 124" stroke="#ffffff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                     </g>
                     <!-- Articulaciones (Hombros, Codos, Rodillas) -->
                     <g id="sym-overlay-joints" class="sym-overlay hidden">
-                      <circle cx="177" cy="121" r="7" fill="none" stroke="#ff2a4b" stroke-width="2.2"/>
-                      <circle cx="283" cy="121" r="7" fill="none" stroke="#ff2a4b" stroke-width="2.2"/>
-                      <circle cx="169" cy="187" r="7" fill="none" stroke="#ffd000" stroke-width="2.2"/>
-                      <circle cx="291" cy="187" r="7" fill="none" stroke="#ffd000" stroke-width="2.2"/>
-                      <circle cx="212" cy="350" r="8" fill="none" stroke="#ff2a4b" stroke-width="2.2"/>
-                      <circle cx="248" cy="350" r="8" fill="none" stroke="#ff2a4b" stroke-width="2.2"/>
+                      <circle cx="176" cy="101" r="7" fill="none" stroke="#F87171" stroke-width="2.2"/>
+                      <circle cx="284" cy="101" r="7" fill="none" stroke="#F87171" stroke-width="2.2"/>
+                      <circle cx="164" cy="156" r="7" fill="none" stroke="#FBBF24" stroke-width="2.2"/>
+                      <circle cx="296" cy="156" r="7" fill="none" stroke="#FBBF24" stroke-width="2.2"/>
+                      <circle cx="212" cy="318" r="8" fill="none" stroke="#F87171" stroke-width="2.2"/>
+                      <circle cx="248" cy="318" r="8" fill="none" stroke="#F87171" stroke-width="2.2"/>
                     </g>
                     <!-- Sarpullido / Alergia cutánea -->
                     <g id="sym-overlay-rash" class="sym-overlay hidden">
-                      <circle cx="160" cy="212" r="2.2" fill="#f97316"/>
-                      <circle cx="165" cy="220" r="2.2" fill="#f97316"/>
-                      <circle cx="157" cy="226" r="2.2" fill="#f97316"/>
-                      <circle cx="298" cy="215" r="2.2" fill="#f97316"/>
-                      <circle cx="294" cy="224" r="2.2" fill="#f97316"/>
+                      <circle cx="156" cy="180" r="2.2" fill="#FBBF24"/>
+                      <circle cx="161" cy="187" r="2.2" fill="#FBBF24"/>
+                      <circle cx="154" cy="193" r="2.2" fill="#FBBF24"/>
+                      <circle cx="304" cy="182" r="2.2" fill="#FBBF24"/>
+                      <circle cx="299" cy="190" r="2.2" fill="#FBBF24"/>
                     </g>
                     <!-- Fiebre / Infección / Metabólico -->
                     <g id="sym-overlay-immune" class="sym-overlay hidden">
-                      <circle cx="230" cy="211" r="19" fill="none" stroke="#ffd000" stroke-width="2" stroke-dasharray="4 3"/>
-                      <circle cx="222" cy="100" r="3.5" fill="#ffd000"/>
-                      <circle cx="238" cy="100" r="3.5" fill="#ffd000"/>
+                      <circle cx="229" cy="170" r="17" fill="none" stroke="#FBBF24" stroke-width="2" stroke-dasharray="4 3"/>
+                      <circle cx="223" cy="81" r="3.2" fill="#FBBF24"/>
+                      <circle cx="237" cy="81" r="3.2" fill="#FBBF24"/>
                     </g>
                     <!-- Pélvico / Menstrual / Cólico (Femenino) -->
                     <g id="sym-overlay-pelvic" class="sym-overlay hidden">
-                      <ellipse cx="230" cy="262" rx="18" ry="11" fill="rgba(244, 114, 182, 0.28)" stroke="#f472b6" stroke-width="2.2"/>
-                      <path d="M220 262 Q230 255 240 262" stroke="#f9a8d4" stroke-width="2" fill="none"/>
+                      <ellipse cx="230" cy="204" rx="18" ry="10" fill="rgba(248, 113, 113, 0.22)" stroke="#F87171" stroke-width="2.2"/>
+                      <path d="M220 204 Q230 198 240 204" stroke="#D4D4D4" stroke-width="2" fill="none"/>
                     </g>
                     <!-- Radiación ionizante en halo -->
                     <g id="sym-overlay-radiation" class="sym-overlay hidden">
-                      <ellipse cx="230" cy="222" rx="124" ry="202" fill="none" stroke="#ff2a4b" stroke-width="2.2" stroke-dasharray="6 6"/>
+                      <ellipse cx="230" cy="224" rx="124" ry="212" fill="none" stroke="#F87171" stroke-width="2.2" stroke-dasharray="6 6"/>
                     </g>
                   </g>
 
                   <!-- Líneas guía limpias sin superposición -->
-                  <g class="svg-labels" font-size="12.5" font-weight="700" fill="#e2e8f0">
-                    <line x1="142" y1="68" x2="108" y2="38" stroke="#64748b" stroke-width="1.3"/>
-                    <text x="102" y="42" text-anchor="end">Radiación</text>
-                    <line x1="248" y1="44" x2="352" y2="38" stroke="#64748b" stroke-width="1.3"/>
-                    <text x="358" y="42" text-anchor="start">Conducta</text>
-                    <line x1="212" y1="67" x2="108" y2="78" stroke="#64748b" stroke-width="1.3"/>
-                    <text x="102" y="82" text-anchor="end">Neuro-Ocular</text>
-                    <line x1="259" y1="148" x2="352" y2="148" stroke="#64748b" stroke-width="1.3"/>
-                    <text x="358" y="152" text-anchor="start">Respiratorio</text>
-                    <line x1="219" y1="150" x2="108" y2="156" stroke="#64748b" stroke-width="1.3"/>
-                    <text x="102" y="160" text-anchor="end">Corazón</text>
-                    <line x1="249" y1="210" x2="352" y2="210" stroke="#64748b" stroke-width="1.3"/>
-                    <text x="358" y="214" text-anchor="start">Inmune</text>
-                    <line x1="201" y1="322" x2="108" y2="322" stroke="#64748b" stroke-width="1.3"/>
-                    <text x="102" y="326" text-anchor="end">Osteomuscular</text>
+                  <g class="svg-labels" font-size="12" font-weight="600" fill="#D4D4D4" font-family="JetBrains Mono, monospace">
+                    <line x1="136" y1="56" x2="106" y2="34" stroke="#525252" stroke-width="1.3"/>
+                    <text x="100" y="38" text-anchor="end">Radiación</text>
+                    <line x1="245" y1="35" x2="352" y2="34" stroke="#525252" stroke-width="1.3"/>
+                    <text x="358" y="38" text-anchor="start">Conducta</text>
+                    <line x1="214" y1="53" x2="106" y2="66" stroke="#525252" stroke-width="1.3"/>
+                    <text x="100" y="70" text-anchor="end">Neuro-Ocular</text>
+                    <line x1="256" y1="123" x2="352" y2="123" stroke="#525252" stroke-width="1.3"/>
+                    <text x="358" y="127" text-anchor="start">Respiratorio</text>
+                    <line x1="220" y1="124" x2="106" y2="134" stroke="#525252" stroke-width="1.3"/>
+                    <text x="100" y="138" text-anchor="end">Corazón</text>
+                    <line x1="245" y1="170" x2="352" y2="170" stroke="#525252" stroke-width="1.3"/>
+                    <text x="358" y="174" text-anchor="start">Inmune</text>
+                    <line x1="200" y1="318" x2="106" y2="318" stroke="#525252" stroke-width="1.3"/>
+                    <text x="100" y="322" text-anchor="end">Osteomuscular</text>
                   </g>
                 </svg>
 
@@ -531,26 +530,14 @@
       </section>
 
       <!-- =================================================================
-           VISTA 2: CARGAR / CARGAR ARCHIVO (Control Diario, Subir .JSON, Nuevo)
+           VISTA 2: CHECK IN DIARIO DE TRIPULACIÓN Y REFLEJOS
            ================================================================= -->
-      <section id="view-cargar" class="option-view hidden">
+      <section id="view-checkin" class="option-view hidden">
         <div class="section-bar">
-          <h2 class="section-heading">CENTRO DE CARGA DE DATOS E IMPORTACIÓN</h2>
-          <div class="subtabs">
-            <button type="button" id="subtab-btn-checkin" class="subtab-btn active" onclick="switchCargarTab('checkin')">
-              1. Control Diario de Tripulación
-            </button>
-            <button type="button" id="subtab-btn-file" class="subtab-btn" onclick="switchCargarTab('file')">
-              2. Cargar Archivo (.JSON)
-            </button>
-            <button type="button" id="subtab-btn-create" class="subtab-btn" onclick="switchCargarTab('create')">
-              3. Nuevo Astronauta
-            </button>
-          </div>
+          <h2 class="section-heading">✓ CHECK IN · CONTROL DIARIO DE TRIPULACIÓN</h2>
         </div>
 
-        <!-- SUB-TAB 1: CONTROL DIARIO DE TRIPULACION + MINI-TEST DE REFLEJOS -->
-        <div id="cargar-tab-checkin" class="cargar-panel">
+        <div id="checkin-panel" class="cargar-panel">
           <form id="checkin-form" onsubmit="submitCrewCheckin(event)">
             <div class="form-top-row">
               <div class="form-group">
@@ -760,8 +747,25 @@
             </div>
           </form>
         </div>
+      </section>
 
-        <!-- SUB-TAB 2: SUBIR ARCHIVO .JSON (CARGAR ARCHIVO) -->
+      <!-- =================================================================
+           VISTA 5: CARGAR ASTRONAUTA (Nuevo Astronauta / Cargar con JSON)
+           ================================================================= -->
+      <section id="view-cargar" class="option-view hidden">
+        <div class="section-bar">
+          <h2 class="section-heading">＋ CARGAR ASTRONAUTA (NUEVO / JSON)</h2>
+          <div class="subtabs">
+            <button type="button" id="subtab-btn-create" class="subtab-btn active" onclick="switchCargarTab('create')">
+              1. Nuevo Astronauta
+            </button>
+            <button type="button" id="subtab-btn-file" class="subtab-btn" onclick="switchCargarTab('file')">
+              2. Cargar con JSON
+            </button>
+          </div>
+        </div>
+
+        <!-- SUB-TAB 1: SUBIR ARCHIVO .JSON (CARGAR CON JSON) -->
         <div id="cargar-tab-file" class="cargar-panel hidden">
           <div class="file-upload-card">
             <h3 class="box-title">IMPORTAR PERFIL O BITÁCORA DE ASTRONAUTA DESDE ARCHIVO (.JSON)</h3>
@@ -805,8 +809,8 @@
           </div>
         </div>
 
-        <!-- SUB-TAB 3: CREAR NUEVO ASTRONAUTA -->
-        <div id="cargar-tab-create" class="cargar-panel hidden">
+        <!-- SUB-TAB 2: CREAR NUEVO ASTRONAUTA (ACTIVO POR DEFECTO) -->
+        <div id="cargar-tab-create" class="cargar-panel">
           <div class="form-columns form-columns-single">
             <div class="form-card">
               <h3 class="box-title">REGISTRAR NUEVO ASTRONAUTA (VALORES BASE RECOMENDADOS)</h3>
@@ -952,7 +956,7 @@
                   </select>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                  <label for="mod-avatar-file">📷 Cambiar Fotografía desde el Dispositivo (PNG, JPG, WEBP, SVG)</label>
+                  <label for="mod-avatar-file">📷 Cambiar Foto de Perfil desde el Dispositivo (PNG, JPG, WEBP, SVG)</label>
                   <div class="custom-avatar-upload-row">
                     <img id="mod-avatar-preview" class="upload-preview-thumb" src="assets/avatars/astro_01.svg" alt="Vista previa del astronauta" />
                     <div class="custom-avatar-upload-controls">
@@ -1292,8 +1296,6 @@
           </div>
           <div class="glossary-header-controls">
             <span id="glossary-count-badge" class="section-meta">Cargando entradas...</span>
-            <button type="button" class="action-btn btn-secondary btn-compact" onclick="expandAllGlossary(true)">Expandir Todo</button>
-            <button type="button" class="action-btn btn-secondary btn-compact" onclick="expandAllGlossary(false)">Colapsar Todo</button>
           </div>
         </div>
 

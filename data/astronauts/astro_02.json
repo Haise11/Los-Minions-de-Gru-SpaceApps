@@ -474,7 +474,7 @@
     },
     {
       "dia_mision": 14,
-      "timestamp_unix": 1794712496,
+      "timestamp_unix": 1794747013,
       "fc": 74,
       "pa_sis": 120,
       "pa_dia": 80,
@@ -489,7 +489,7 @@
       "ejercicio_min": 93,
       "tuvo_eva": 0,
       "pre_resp_o2_min": 120,
-      "sintomas_flags": 160,
+      "sintomas_flags": 96,
       "sueno_horas": 7.3,
       "sueno_calidad": 4,
       "animo": 8,

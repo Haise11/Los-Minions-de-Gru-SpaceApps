@@ -746,7 +746,7 @@ static void test_http_rest_api_and_static_files(void) {
     /* 1. Archivos estaticos */
     assert(send_local_http_req(&mgr, port, "GET", "/", NULL, resp, sizeof(resp)) == 200);
     assert(strlen(resp) < sizeof(resp) - 100);
-    assert(strstr(resp, "MONITOR MÉDICO DE TRIPULACIÓN") != NULL);
+    assert(strstr(resp, "P.U.L.S.O.") != NULL);
     assert(send_local_http_req(&mgr, port, "GET", "/styles.css", NULL, resp, sizeof(resp)) == 200);
     assert(send_local_http_req(&mgr, port, "GET", "/app.js", NULL, resp, sizeof(resp)) == 200);
     assert(send_local_http_req(&mgr, port, "GET", "/assets/avatars/astro_01.svg", NULL, resp, sizeof(resp)) == 200);

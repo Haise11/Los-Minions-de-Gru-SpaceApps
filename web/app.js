@@ -204,14 +204,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 function setSidebarCollapsed(collapsed) {
   const shell = document.getElementById("app-shell");
   const toggleBtn = document.getElementById("sidebar-toggle-btn");
-  const chev = document.getElementById("sidebar-chevron");
   if (!shell) return;
   shell.classList.toggle("sidebar-collapsed", collapsed);
   if (toggleBtn) {
     toggleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-  }
-  if (chev) {
-    chev.textContent = collapsed ? "▸" : "◂";
   }
   try {
     localStorage.setItem("hrp_sidebar_collapsed", collapsed ? "1" : "0");
@@ -276,10 +272,10 @@ function showToast(message, isError = false) {
   const banner = document.getElementById("toast-banner");
   if (!banner) return;
   banner.textContent = message;
-  banner.style.borderColor = isError ? "#ff2a4b" : "#00e5ff";
+  banner.style.borderColor = isError ? "#F87171" : "#D4D4D4";
   banner.style.background = isError
-    ? "rgba(255, 42, 75, 0.24)"
-    : "rgba(0, 229, 255, 0.18)";
+    ? "rgba(248, 113, 113, 0.2)"
+    : "rgba(212, 212, 212, 0.14)";
   banner.classList.remove("hidden");
   clearTimeout(banner._hideTimer);
   banner._hideTimer = setTimeout(() => {
@@ -332,12 +328,6 @@ async function refreshMissionState(initialLoad = false) {
 
     if (currentAstronautId) {
       await loadAstronautDetail(currentAstronautId, false);
-    }
-
-    const syncLabel = document.getElementById("last-sync-label");
-    if (syncLabel) {
-      const now = new Date();
-      syncLabel.textContent = `Último pulso local: ${now.toLocaleTimeString()}`;
     }
   } catch (err) {
     console.error("Error refrescando estado clínico:", err);
@@ -452,18 +442,22 @@ function updateMostrarLayoutVisibility() {
 }
 
 /* =========================================================================
- * Navegacion entre Vistas (OPTIONS: CARGAR | MOSTRAR | PROMEDIO | GLOSARIO)
+ * Navegacion entre Vistas (OPCIONES: MOSTRAR | CHECK IN | PROMEDIO | GLOSARIO | CARGAR | MODIFICAR)
  * ========================================================================= */
-function switchOptionView(viewName) {
+function switchOptionView(viewName, resetDetailOnMostrar = false) {
   activeOptionView = viewName;
-  const views = ["mostrar", "cargar", "modificar", "promedio", "glosario"];
+  const views = ["mostrar", "checkin", "promedio", "glosario", "cargar", "modificar"];
   views.forEach((v) => {
     const sec = document.getElementById(`view-${v}`);
     const btn = document.getElementById(`nav-${v}`);
     if (sec) sec.classList.toggle("hidden", v !== viewName);
     if (btn) btn.classList.toggle("active", v === viewName);
   });
-  updateMostrarLayoutVisibility();
+  if (viewName === "mostrar" && resetDetailOnMostrar && currentAstronautId) {
+    closeAstronautDetail();
+  } else {
+    updateMostrarLayoutVisibility();
+  }
   if (viewName === "modificar") {
     const sel = document.getElementById("mod-astronaut-select");
     const preferred = currentAstronautId || (sel && sel.value) || (allCrewList[0]?.id || "");
@@ -478,12 +472,13 @@ function switchOptionView(viewName) {
 }
 
 function switchCargarTab(tabName) {
-  const tabs = ["checkin", "file", "create"];
+  const activeTab = tabName === "file" ? "file" : "create";
+  const tabs = ["create", "file"];
   tabs.forEach((t) => {
     const panel = document.getElementById(`cargar-tab-${t}`);
     const btn = document.getElementById(`subtab-btn-${t}`);
-    if (panel) panel.classList.toggle("hidden", t !== tabName);
-    if (btn) btn.classList.toggle("active", t === tabName);
+    if (panel) panel.classList.toggle("hidden", t !== activeTab);
+    if (btn) btn.classList.toggle("active", t === activeTab);
   });
 }
 
@@ -1182,7 +1177,7 @@ function renderBodyPartDetailBox(a, partKey, shouldScroll = false) {
   const info = getBodyPartClinicalInfo(a, latest, rep, partKey);
   if (!info) return;
 
-  const colorMap = ["#00ff66", "#ffd000", "#ff2a4b"];
+  const colorMap = ["#4ADE80", "#FBBF24", "#F87171"];
   const labelMap = ["NORMAL", "PRECAUCIÓN", "CRÍTICO"];
   const st = Math.min(2, Math.max(0, info.st || 0));
   const stColor = colorMap[st];
@@ -1196,7 +1191,7 @@ function renderBodyPartDetailBox(a, partKey, shouldScroll = false) {
     ? `<div class="body-part-syms">
         ${info.syms
           .map(
-            (s) => `<span class="body-part-sym-pill" style="border-color:${s.sev >= 2 ? "#ff2a4b" : "#ffd000"}; color:${s.sev >= 2 ? "#ff8da1" : "#ffe57f"};">
+            (s) => `<span class="body-part-sym-pill" style="border-color:${s.sev >= 2 ? "#F87171" : "#FBBF24"}; color:${s.sev >= 2 ? "#FCA5A5" : "#FDE68A"};">
               ${escapeHtml(s.title)}
             </span>`
           )
@@ -1313,6 +1308,71 @@ async function loadAstronautDetail(astronautId, scrollIntoView = false) {
   }
 }
 
+const BODY_SILHOUETTES = {
+  male: {
+    head: "M230 24 C215 24 208 35 209 50 C209 60 214 69 220 73 L240 73 C246 69 251 60 251 50 C252 35 245 24 230 24 Z",
+    neck: "M220 75 L240 75 L244 87 L216 87 Z",
+    chest: "M188 90 L272 90 L262 152 Q230 144 198 152 Z",
+    abdomen: "M198 154 Q230 146 262 154 L259 184 Q230 189 201 184 Z",
+    pelvis: "M201 187 Q230 192 259 187 L263 207 L241 219 L219 219 L197 207 Z",
+    arms: [
+      "M185 91 L167 101 L157 154 L173 156 L187 114 Z",
+      "M275 91 L293 101 L303 154 L287 156 L273 114 Z",
+      "M156 159 L172 161 L162 212 L147 209 Z",
+      "M304 159 L288 161 L298 212 L313 209 Z",
+      "M146 215 L161 218 L156 240 L140 236 L137 224 Z",
+      "M314 215 L299 218 L304 240 L320 236 L323 224 Z"
+    ],
+    legs: [
+      "M197 210 L219 222 L224 316 L200 316 Z",
+      "M263 210 L241 222 L236 316 L260 316 Z",
+      "M200 320 L224 320 L221 407 L204 407 Z",
+      "M260 320 L236 320 L239 407 L256 407 Z",
+      "M204 410 L221 410 L222 423 L196 423 Z",
+      "M256 410 L239 410 L238 423 L264 423 Z"
+    ]
+  },
+  female: {
+    head: "M230 25 C217 25 210 35 211 49 C211 59 216 68 222 72 L238 72 C244 68 249 59 249 49 C250 35 243 25 230 25 Z",
+    neck: "M222 75 L238 75 L241 87 L219 87 Z",
+    chest: "M195 91 Q230 88 265 91 L258 140 Q256 149 253 152 Q230 145 207 152 Q204 149 202 140 Z",
+    abdomen: "M207 154 Q230 147 253 154 C252 166 254 176 261 184 Q230 189 199 184 C206 176 208 166 207 154 Z",
+    pelvis: "M199 187 Q230 192 261 187 C269 196 272 206 267 214 L242 220 L218 220 L193 214 C188 206 191 196 199 187 Z",
+    arms: [
+      "M193 92 L177 101 L167 153 L180 155 L193 113 Z",
+      "M267 92 L283 101 L293 153 L280 155 L267 113 Z",
+      "M166 158 L179 160 L166 211 L153 208 Z",
+      "M294 158 L281 160 L294 211 L307 208 Z",
+      "M152 214 L165 216 L159 237 L146 233 L144 222 Z",
+      "M308 214 L295 216 L301 237 L314 233 L316 222 Z"
+    ],
+    legs: [
+      "M193 216 L218 222 L223 316 L201 316 Z",
+      "M267 216 L242 222 L237 316 L259 316 Z",
+      "M201 320 L223 320 L220 407 L206 407 Z",
+      "M259 320 L237 320 L240 407 L254 407 Z",
+      "M206 410 L220 410 L221 423 L198 423 Z",
+      "M254 410 L240 410 L239 423 L262 423 Z"
+    ]
+  }
+};
+
+function applyBodySilhouette(isFemale) {
+  const shape = isFemale ? BODY_SILHOUETTES.female : BODY_SILHOUETTES.male;
+  ["head", "neck", "chest", "abdomen", "pelvis"].forEach((part) => {
+    const el = document.getElementById(`seg-${part}`);
+    if (el && shape[part]) el.setAttribute("d", shape[part]);
+  });
+  const armSegs = document.querySelectorAll("#svg-sys-3-arms .limb-seg");
+  armSegs.forEach((seg, idx) => {
+    if (shape.arms[idx]) seg.setAttribute("d", shape.arms[idx]);
+  });
+  const legSegs = document.querySelectorAll("#svg-sys-3-legs .limb-seg");
+  legSegs.forEach((seg, idx) => {
+    if (shape.legs[idx]) seg.setAttribute("d", shape.legs[idx]);
+  });
+}
+
 function renderAstronautDetailPanel(a) {
   const panel = document.getElementById("astronaut-detail-panel");
   if (panel) panel.classList.remove("hidden");
@@ -1329,6 +1389,7 @@ function renderAstronautDetailPanel(a) {
   document.getElementById("detail-role").textContent = a.rol || "";
 
   const isFem = (a.sexo || "M").toUpperCase() === "F";
+  applyBodySilhouette(isFem);
   const sexBadge = document.getElementById("detail-sex-badge");
   if (sexBadge) {
     sexBadge.className = `sex-badge ${isFem ? "sex-f" : "sex-m"}`;
@@ -1354,11 +1415,11 @@ function renderAstronautDetailPanel(a) {
 
   /* 1. Colorear Mapa Corporal Anatomico Segmentado, Corazon Encapsulado y Sintomas */
   const sysStatus = rep.system_status || [0, 0, 0, 0, 0, 0, 0];
-  const colorMap = ["#00ff66", "#ffd000", "#ff2a4b"];
+  const colorMap = ["#4ADE80", "#FBBF24", "#F87171"];
   const heartColors = [
-    { fill: "#22c55e", stroke: "#052e16", capStroke: "#064e3b", capFill: "rgba(5, 46, 22, 0.56)" },
-    { fill: "#ffd000", stroke: "#713f12", capStroke: "#854d0e", capFill: "rgba(113, 63, 18, 0.48)" },
-    { fill: "#ff2a4b", stroke: "#7f1d1d", capStroke: "#991b1b", capFill: "rgba(127, 29, 29, 0.50)" }
+    { fill: "#4ADE80", stroke: "#052e16", capStroke: "#14532d", capFill: "rgba(5, 46, 22, 0.56)" },
+    { fill: "#FBBF24", stroke: "#713f12", capStroke: "#854d0e", capFill: "rgba(113, 63, 18, 0.48)" },
+    { fill: "#F87171", stroke: "#7f1d1d", capStroke: "#991b1b", capFill: "rgba(127, 29, 29, 0.50)" }
   ];
 
   const setSvgColor = (id, prop, statusIdx) => {
@@ -1406,17 +1467,17 @@ function renderAstronautDetailPanel(a) {
   if (symptomList) {
     if (activeSymptoms.length === 0) {
       symptomList.innerHTML = `<div class="body-symptom-item symptom-normal">
-        <span class="organ-icon-box" style="color:#00ff66;">${getMinimalistOrganIconSvg("heart")}</span>
+        <span class="organ-icon-box" style="color:#4ADE80;">${getMinimalistOrganIconSvg("heart")}</span>
         <div class="symptom-item-text">
           <strong>Sin síntomas agudos expresados</strong>
           <span>Órganos y segmentos anatómicos en rango normal</span>
         </div>
-        <strong class="symptom-sev-tag" style="color:#00ff66;">NORMAL</strong>
+        <strong class="symptom-sev-tag" style="color:#4ADE80;">NORMAL</strong>
       </div>`;
     } else {
       symptomList.innerHTML = activeSymptoms
         .map((s) => {
-          const stColor = s.sev >= 2 ? "#ff2a4b" : "#ffd000";
+          const stColor = s.sev >= 2 ? "#F87171" : "#FBBF24";
           const sevCls = s.sev >= 2 ? "sym-critical" : "sym-caution";
           const sevTxt = s.sev >= 2 ? "CRÍTICO" : "PRECAUCIÓN";
           return `<div class="body-symptom-item ${sevCls}" data-sys="${s.sysIdx}" data-overlay="${escapeHtml(s.overlayId)}"
@@ -1550,7 +1611,7 @@ function renderAstronautDetailPanel(a) {
   if (radFill) {
     radFill.style.width = `${radPct.toFixed(1)}%`;
     radFill.style.background =
-      totalRad >= 600 ? "#ff2a4b" : totalRad >= 480 ? "#ffd000" : "#00ff66";
+      totalRad >= 600 ? "#F87171" : totalRad >= 480 ? "#FBBF24" : "#4ADE80";
   }
 
   /* Estado de botones 1-clic de contramedidas y resumen de actuacion */
@@ -1610,7 +1671,7 @@ function renderAstronautDetailPanel(a) {
             <div class="hormonal-mini-tile"><span>Fase / Día Ciclo</span><strong>${escapeHtml(faseName)} · D${latest.dia_ciclo || 0}</strong></div>
             <div class="hormonal-mini-tile"><span>Flujo Menstrual</span><strong>${escapeHtml(flowTxt)}</strong></div>
             <div class="hormonal-mini-tile"><span>Cólico / Dismenorrea</span><strong>${latest.colico_menstrual || 0} / 10</strong></div>
-            <div class="hormonal-mini-tile"><span>Suplemento Hierro (Fe)</span><strong style="color:${ironActive ? "#00ff66" : "#ffd000"}">${ironActive ? "ACTIVO" : "PENDIENTE"}</strong></div>
+            <div class="hormonal-mini-tile"><span>Suplemento Hierro (Fe)</span><strong style="color:${ironActive ? "#4ADE80" : "#FBBF24"}">${ironActive ? "ACTIVO" : "PENDIENTE"}</strong></div>
           `;
         }
         if (ironBtn) {
@@ -1654,9 +1715,9 @@ function renderAstronautDetailPanel(a) {
   const alerts = rep.alerts || [];
   if (alertsList) {
     if (alerts.length === 0) {
-      alertsList.innerHTML = `<div class="alert-item" style="border-left-color:#00ff66;">
+      alertsList.innerHTML = `<div class="alert-item" style="border-left-color:#4ADE80;">
         <div class="alert-header-row">
-          <span class="alert-title" style="color:#00ff66;">✓ Estado Fisiológico y Conductual Normal</span>
+          <span class="alert-title" style="color:#4ADE80;">✓ Estado Fisiológico y Conductual Normal</span>
           <span class="alert-ref-tag">Medidas Clínicas Estándar</span>
         </div>
         <div class="alert-exp">Todos los parámetros vitales, dosimétricos, hormonales y conductuales se encuentran dentro de los márgenes normales respecto a su referencia personal.</div>
@@ -1667,7 +1728,7 @@ function renderAstronautDetailPanel(a) {
           const isCrit = al.severity === 2;
           return `<div class="alert-item ${isCrit ? "alert-critical" : ""}">
             <div class="alert-header-row">
-              <span class="alert-title" style="color:${isCrit ? "#ff2a4b" : "#ffd000"}">
+              <span class="alert-title" style="color:${isCrit ? "#F87171" : "#FBBF24"}">
                 ${isCrit ? "🚨 CRÍTICO:" : "⚠️ PRECAUCIÓN:"} ${escapeHtml(al.titulo)}
               </span>
               <span class="alert-ref-tag">${escapeHtml(al.referencia_nasa)}</span>
@@ -1695,49 +1756,49 @@ function renderAstronautCharts(a) {
     recentHist.map((s) => ({ day: s.dia_mision, value: s.fc })),
     b.fc_base || 70,
     "lpm",
-    "#00e5ff"
+    "#D4D4D4"
   );
   drawTrendChart(
     "canvas-spo2",
     recentHist.map((s) => ({ day: s.dia_mision, value: s.spo2 })),
     b.spo2_base || 98,
     "%",
-    "#00ff66"
+    "#4ADE80"
   );
   drawTrendChart(
     "canvas-sueno",
     recentHist.map((s) => ({ day: s.dia_mision, value: s.sueno_horas })),
     b.sueno_base_h || 7.5,
     "h",
-    "#c084fc"
+    "#D4D4D4"
   );
   drawTrendChart(
     "canvas-rad",
     recentHist.map((s) => ({ day: s.dia_mision, value: s.dosis_dia_msv })),
     b.dosis_diaria_nominal_msv || 0.5,
     "mSv",
-    "#ffd000"
+    "#FBBF24"
   );
   drawTrendChart(
     "canvas-estres",
     recentHist.map((s) => ({ day: s.dia_mision, value: s.estres })),
     b.estres_base || 3,
     "/10",
-    "#ff2a4b"
+    "#F87171"
   );
   drawTrendChart(
     "canvas-vision",
     recentHist.map((s) => ({ day: s.dia_mision, value: s.vision_actual })),
     b.vision_base || 1.0,
     "",
-    "#38bdf8"
+    "#D4D4D4"
   );
 }
 
 /* =========================================================================
  * Helper de Graficos en <canvas> Nativo (frontend_ui.md §4)
  * ========================================================================= */
-function drawTrendChart(canvasId, series, baselineValue, unit, strokeColor = "#00e5ff") {
+function drawTrendChart(canvasId, series, baselineValue, unit, strokeColor = "#D4D4D4") {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -1746,8 +1807,8 @@ function drawTrendChart(canvasId, series, baselineValue, unit, strokeColor = "#0
   ctx.clearRect(0, 0, W, H);
 
   if (!series || series.length === 0) {
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "12px sans-serif";
+    ctx.fillStyle = "#A3A3A3";
+    ctx.font = "12px 'Inter', sans-serif";
     ctx.fillText("Sin muestras históricas", 20, H / 2);
     return;
   }
@@ -1778,7 +1839,7 @@ function drawTrendChart(canvasId, series, baselineValue, unit, strokeColor = "#0
   const yOf = (v) => padT + plotH - ((v - minV) / (maxV - minV)) * plotH;
 
   /* Lineas de grilla horizontales */
-  ctx.strokeStyle = "rgba(148, 163, 184, 0.22)";
+  ctx.strokeStyle = "rgba(212, 212, 212, 0.14)";
   ctx.lineWidth = 1;
   for (let g = 0; g <= 2; g++) {
     const gy = padT + (g / 2) * plotH;
@@ -1789,8 +1850,8 @@ function drawTrendChart(canvasId, series, baselineValue, unit, strokeColor = "#0
 
     const labelVal = maxV - (g / 2) * (maxV - minV);
     const decimals = maxV - minV < 0.5 || Math.abs(labelVal) < 2 ? 2 : labelVal < 10 ? 1 : 0;
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "10px monospace";
+    ctx.fillStyle = "#A3A3A3";
+    ctx.font = "10px 'JetBrains Mono', monospace";
     ctx.fillText(labelVal.toFixed(decimals), 3, gy + 3);
   }
 
@@ -1798,7 +1859,7 @@ function drawTrendChart(canvasId, series, baselineValue, unit, strokeColor = "#0
   if (typeof baselineValue === "number") {
     const by = yOf(baselineValue);
     ctx.save();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.strokeStyle = "rgba(212, 212, 212, 0.45)";
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(padL, by);
@@ -1829,8 +1890,8 @@ function drawTrendChart(canvasId, series, baselineValue, unit, strokeColor = "#0
     ctx.fill();
   });
 
-  ctx.fillStyle = "#cbd5e1";
-  ctx.font = "10px monospace";
+  ctx.fillStyle = "#A3A3A3";
+  ctx.font = "10px 'JetBrains Mono', monospace";
   const firstDay = series[0].day;
   const lastDay = series[series.length - 1].day;
   const lastVal = series[series.length - 1].value;
@@ -2268,7 +2329,7 @@ function renderPromedioView(m, crewList, forceEnvFill = false) {
   const sumAvgEl = document.getElementById("sum-health-avg");
   if (sumAvgEl) {
     sumAvgEl.textContent = `${avgVal}%`;
-    sumAvgEl.style.color = avgVal < 60 ? "#ff2a4b" : avgVal < 85 ? "#ffd000" : "#00ff66";
+    sumAvgEl.style.color = avgVal < 60 ? "#F87171" : avgVal < 85 ? "#FBBF24" : "#4ADE80";
   }
   setTxt(
     "sum-crew-breakdown",
@@ -2287,12 +2348,12 @@ function renderPromedioView(m, crewList, forceEnvFill = false) {
     hazList.innerHTML = HAZARD_META.map((h) => {
       const st = hazStatus[h.id] || 0;
       const cls = st === 2 ? "haz-critical" : st === 1 ? "haz-caution" : "";
-      const badgeColor = st === 2 ? "#ff2a4b" : st === 1 ? "#ffd000" : "#00ff66";
+      const badgeColor = st === 2 ? "#F87171" : st === 1 ? "#FBBF24" : "#4ADE80";
       const badgeText = st === 2 ? "CRÍTICO" : st === 1 ? "PRECAUCIÓN" : "NORMAL";
       return `<div class="hazard-row ${cls}">
         <div>
           <strong>${escapeHtml(h.name)}</strong>
-          <div style="font-size:0.76rem; color:#94a3b8; margin-top:2px;">${escapeHtml(h.desc)}</div>
+          <div style="font-size:0.76rem; color:#A3A3A3; margin-top:2px;">${escapeHtml(h.desc)}</div>
         </div>
         <span class="eva-badge" style="color:${badgeColor}; border:1px solid ${badgeColor};">
           ${badgeText}
@@ -2945,38 +3006,6 @@ async function onJsonAvatarSelected(ev) {
   }
 }
 
-async function onDetailAvatarSelected(ev) {
-  const file = ev.target.files && ev.target.files[0];
-  if (!file || !currentAstronautId) return;
-  try {
-    const dataUrl = await readImageFileAsDataUrl(file);
-    const res = await fetch("/api/avatars", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: currentAstronautId,
-        data_url: dataUrl
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      showToast(data.error || "Error guardando foto personalizada", true);
-      return;
-    }
-    avatarCacheBust = Date.now();
-    const imgEl = document.getElementById("detail-avatar");
-    if (imgEl && data.avatar) {
-      imgEl.src = resolveAvatarUrl(data.avatar);
-    }
-    showToast(`Fotografía actualizada para ${currentAstronautId}.`);
-    await refreshMissionState(true);
-  } catch (err) {
-    showToast(err.message || "Error subiendo fotografía", true);
-  } finally {
-    ev.target.value = "";
-  }
-}
-
 /* =========================================================================
  * Glosario Clinico y Operativo NASA HRP / CSA (GET /api/glossary)
  * ========================================================================= */
@@ -3020,10 +3049,16 @@ function filterGlossaryView() {
   renderGlossary();
 }
 
+const GLOSSARY_SEVERITY_ORDER = {
+  CRITICAL: 3,
+  CAUTION: 2,
+  OK: 1
+};
+
 function getFilteredGlossaryItems() {
   if (!glossaryData || !Array.isArray(glossaryData.items)) return [];
   const query = normalizeText(document.getElementById("glossary-search-input")?.value || "");
-  return glossaryData.items.filter((item) => {
+  const matched = glossaryData.items.filter((item) => {
     if (activeGlossaryCategory !== "ALL" && item.category !== activeGlossaryCategory) {
       return false;
     }
@@ -3044,6 +3079,11 @@ function getFilteredGlossaryItems() {
     ].join(" "));
     return haystack.includes(query);
   });
+  return matched.sort((a, b) => {
+    const sa = GLOSSARY_SEVERITY_ORDER[a.severity] || 0;
+    const sb = GLOSSARY_SEVERITY_ORDER[b.severity] || 0;
+    return sb - sa;
+  });
 }
 
 function toggleGlossaryItem(itemId) {
@@ -3052,16 +3092,6 @@ function toggleGlossaryItem(itemId) {
     glossaryExpandedIds.delete(itemId);
   } else {
     glossaryExpandedIds.add(itemId);
-  }
-  renderGlossary();
-}
-
-function expandAllGlossary(expand) {
-  const items = getFilteredGlossaryItems();
-  if (expand) {
-    items.forEach((it) => glossaryExpandedIds.add(it.id));
-  } else {
-    glossaryExpandedIds.clear();
   }
   renderGlossary();
 }
