@@ -135,6 +135,7 @@ void sample_from_baseline(DailyHealthSample *s, const AstronautBaseline *b, int 
     s->dolor_cabeza     = 0;
     s->mareo_vestibular = 0;
     s->ejercicio_min    = b->ejercicio_objetivo_min;
+    s->dia_descanso     = 0;
     s->tuvo_eva         = 0;
     s->pre_resp_o2_min  = b->pre_resp_o2_objetivo_min;
     s->sintomas_flags   = SYM_VIT_D_TAKEN;
@@ -171,13 +172,15 @@ void sample_prepare_partial_base(DailyHealthSample *out, const Astronaut *a, int
         *out = *latest;
         if (dia_mision > 0) {
             if (dia_mision != latest->dia_mision) {
-                /* Nuevo dia: no arrastrar evento EVA puntual del dia anterior */
+                /* Nuevo dia: no arrastrar evento EVA ni dia de descanso puntual del dia anterior */
                 out->tuvo_eva = 0;
+                out->dia_descanso = 0;
             }
             out->dia_mision = dia_mision;
         } else {
-            out->dia_mision = latest->dia_mision + 1;
-            out->tuvo_eva   = 0;
+            out->dia_mision   = latest->dia_mision + 1;
+            out->tuvo_eva     = 0;
+            out->dia_descanso = 0;
         }
         out->timestamp_unix = (long)time(NULL);
     } else {
@@ -238,6 +241,7 @@ StatusCode validate_sample(const DailyHealthSample *s) {
     if (s->dolor_cabeza < 0 || s->dolor_cabeza > 10)         return ERR_INVALID_RANGE;
     if (s->mareo_vestibular < 0 || s->mareo_vestibular > 10) return ERR_INVALID_RANGE;
     if (s->ejercicio_min < 0 || s->ejercicio_min > 600)      return ERR_INVALID_RANGE;
+    if (s->dia_descanso < 0 || s->dia_descanso > 1)          return ERR_INVALID_RANGE;
     if (s->tuvo_eva < 0 || s->tuvo_eva > 1)                  return ERR_INVALID_RANGE;
     if (s->pre_resp_o2_min < 0 || s->pre_resp_o2_min > 600)  return ERR_INVALID_RANGE;
     if (s->sueno_calidad < 1 || s->sueno_calidad > 5)        return ERR_INVALID_RANGE;
@@ -350,21 +354,30 @@ int astronaut_compute_window_averages(const Astronaut *a,
     const DailyHealthSample *latest = astronaut_get_latest_sample(a);
     int current_day = latest->dia_mision;
 
-    float sum_sueno = 0.0f;
-    float sum_ej    = 0.0f;
-    float sum_cal   = 0.0f;
-    float sum_hid   = 0.0f;
-    int matched     = 0;
+    float sum_sueno     = 0.0f;
+    float sum_ej_all    = 0.0f;
+    float sum_ej_active = 0.0f;
+    float sum_cal       = 0.0f;
+    float sum_hid       = 0.0f;
+    int matched         = 0;
+    int active_ej_days  = 0;
+    int rest_days       = 0;
 
     for (int i = a->history.count - 1; i >= 0; i--) {
         const DailyHealthSample *s = ring_buffer_get_chronological(&a->history, i);
         if (!s) continue;
         if (current_day > 0 && s->dia_mision > 0) {
             if (s->dia_mision > current_day - window_days && s->dia_mision <= current_day) {
-                sum_sueno += s->sueno_horas;
-                sum_ej    += (float)s->ejercicio_min;
-                sum_cal   += (float)s->calorias_kcal;
-                sum_hid   += (float)s->hidratacion_ml;
+                sum_sueno  += s->sueno_horas;
+                sum_ej_all += (float)s->ejercicio_min;
+                if (s->dia_descanso) {
+                    rest_days++;
+                } else {
+                    sum_ej_active += (float)s->ejercicio_min;
+                    active_ej_days++;
+                }
+                sum_cal += (float)s->calorias_kcal;
+                sum_hid += (float)s->hidratacion_ml;
                 matched++;
             }
         }
@@ -377,17 +390,31 @@ int astronaut_compute_window_averages(const Astronaut *a,
         for (int i = start; i < a->history.count; i++) {
             const DailyHealthSample *s = ring_buffer_get_chronological(&a->history, i);
             if (!s) continue;
-            sum_sueno += s->sueno_horas;
-            sum_ej    += (float)s->ejercicio_min;
-            sum_cal   += (float)s->calorias_kcal;
-            sum_hid   += (float)s->hidratacion_ml;
+            sum_sueno  += s->sueno_horas;
+            sum_ej_all += (float)s->ejercicio_min;
+            if (s->dia_descanso) {
+                rest_days++;
+            } else {
+                sum_ej_active += (float)s->ejercicio_min;
+                active_ej_days++;
+            }
+            sum_cal += (float)s->calorias_kcal;
+            sum_hid += (float)s->hidratacion_ml;
             matched++;
         }
     }
 
     if (matched > 0) {
         if (out_sueno_avg)       *out_sueno_avg       = sum_sueno / (float)matched;
-        if (out_ejercicio_avg)   *out_ejercicio_avg   = sum_ej / (float)matched;
+        if (out_ejercicio_avg) {
+            if (rest_days <= 2 && active_ej_days > 0) {
+                *out_ejercicio_avg = sum_ej_active / (float)active_ej_days;
+            } else if (rest_days <= 2 && active_ej_days == 0) {
+                *out_ejercicio_avg = (float)a->baseline.ejercicio_objetivo_min;
+            } else {
+                *out_ejercicio_avg = sum_ej_all / (float)matched;
+            }
+        }
         if (out_calorias_avg)    *out_calorias_avg    = sum_cal / (float)matched;
         if (out_hidratacion_avg) *out_hidratacion_avg = sum_hid / (float)matched;
     }

@@ -160,6 +160,7 @@ cJSON *sample_to_json(const DailyHealthSample *s) {
     cJSON_AddNumberToObject(o, "dolor_cabeza", s->dolor_cabeza);
     cJSON_AddNumberToObject(o, "mareo_vestibular", s->mareo_vestibular);
     cJSON_AddNumberToObject(o, "ejercicio_min", s->ejercicio_min);
+    cJSON_AddNumberToObject(o, "dia_descanso", s->dia_descanso);
     cJSON_AddNumberToObject(o, "tuvo_eva", s->tuvo_eva);
     cJSON_AddNumberToObject(o, "pre_resp_o2_min", s->pre_resp_o2_min);
     cJSON_AddNumberToObject(o, "sintomas_flags", (double)s->sintomas_flags);
@@ -197,6 +198,7 @@ void sample_from_json_partial(DailyHealthSample *s, const cJSON *obj) {
     json_get_int(obj, "dolor_cabeza", &s->dolor_cabeza);
     json_get_int(obj, "mareo_vestibular", &s->mareo_vestibular);
     json_get_int(obj, "ejercicio_min", &s->ejercicio_min);
+    json_get_bool_int(obj, "dia_descanso", &s->dia_descanso);
     json_get_bool_int(obj, "tuvo_eva", &s->tuvo_eva);
     json_get_int(obj, "pre_resp_o2_min", &s->pre_resp_o2_min);
     json_get_uint(obj, "sintomas_flags", &s->sintomas_flags);

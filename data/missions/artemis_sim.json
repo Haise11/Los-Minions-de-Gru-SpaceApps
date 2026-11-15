@@ -3,7 +3,7 @@
   "nombre": "Artemis IV / Tránsito a Marte — Sol 14",
   "destino": "Tránsito a Marte",
   "dia_actual": 14,
-  "crew_count": 5,
+  "crew_count": 4,
   "env": {
     "presion_cabina_kpa": 101.3,
     "po2_kpa": 21.3,
@@ -18,7 +18,6 @@
     "astro_01",
     "astro_02",
     "astro_03",
-    "astro_04",
-    "astro_07"
+    "astro_04"
   ]
 }

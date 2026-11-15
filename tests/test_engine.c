@@ -764,6 +764,10 @@ static void test_http_rest_api_and_static_files(void) {
     assert(strstr(resp, "\"source_title\"") != NULL);
     assert(strstr(resp, "HORMONAL_MENORRHAGIA_CRIT") != NULL);
     assert(strstr(resp, "SYM_THIGH_CUFF_ACTIVE") != NULL);
+    assert(strstr(resp, "CDRA") != NULL);
+    assert(strstr(resp, "CAMRAS") != NULL);
+    assert(strstr(resp, "\"system\":\"RADIATION\"") != NULL);
+    assert(strstr(resp, "Ánimo y estrés: escala 1–10") != NULL);
     assert(strstr(resp, "https://www.nasa.gov/hrp/5-hazards-of-human-spaceflight/") != NULL);
 
     /* 2b. Subrutas API desconocidas deben retornar 404 Not Found (no 400 Bad Request) */
@@ -912,6 +916,12 @@ static void test_http_rest_api_and_static_files(void) {
     assert(strstr(resp, "\"priority_astronaut_id\":\"astro_t1\"") != NULL);
     assert(strstr(resp, "\"fase_ciclo\":") != NULL);
 
+    /* 5c. Verificar dia_descanso en API REST de muestra */
+    assert(send_local_http_req(&mgr, port, "POST", "/api/astronauts/astro_t1/samples",
+                               "{\"dia_mision\":17,\"dia_descanso\":1,\"ejercicio_min\":0}",
+                               resp, sizeof(resp)) == 201);
+    assert(strstr(resp, "\"dia_descanso\":1") != NULL);
+
     /* 6. GET /api/astronauts/astro_t1/export */
     assert(send_local_http_req(&mgr, port, "GET", "/api/astronauts/astro_t1/export", NULL, resp, sizeof(resp)) == 200);
     assert(strstr(resp, "Content-Disposition: attachment") != NULL);
@@ -932,6 +942,108 @@ static void test_http_rest_api_and_static_files(void) {
     rmdir("/tmp/space_health_test_api");
 }
 
+static void test_rest_day_and_microgravity_sms(void) {
+    CabinEnv env;
+    cabin_init_nominal(&env);
+    env.gravedad_actual = GRAV_MICRO;
+
+    Astronaut a;
+    astronaut_init_from_defaults(&a, "astro_rest", "Esp. Descanso", "Especialista", "artemis_sim", NULL, NULL);
+
+    /* Validar limites de dia_descanso */
+    DailyHealthSample bad_s;
+    sample_from_baseline(&bad_s, &a.baseline, 1);
+    bad_s.dia_descanso = 2;
+    assert(validate_sample(&bad_s) == ERR_INVALID_RANGE);
+    bad_s.dia_descanso = -1;
+    assert(validate_sample(&bad_s) == ERR_INVALID_RANGE);
+
+    /* 5 dias activos (90 min) + 2 dias de descanso programado (0 min): promedio activo se mantiene en 90 min */
+    for (int d = 1; d <= 7; d++) {
+        DailyHealthSample s;
+        sample_from_baseline(&s, &a.baseline, d);
+        if (d == 3 || d == 7) {
+            s.dia_descanso = 1;
+            s.ejercicio_min = 0;
+        } else {
+            s.dia_descanso = 0;
+            s.ejercicio_min = 90;
+        }
+        assert(astronaut_add_sample(&a, &s) == OK);
+    }
+
+    float ej_7d = 0.0f;
+    astronaut_compute_window_averages(&a, 7, NULL, &ej_7d, NULL, NULL);
+    assert(ej_7d > 89.5f && ej_7d < 90.5f);
+    evaluate_astronaut(&a, &env);
+    assert(!has_alert_rule(&a.report, "GRAV_BONE_CAUT", ALERT_CAUTION));
+    assert(!has_alert_rule(&a.report, "GRAV_BONE_CRIT", ALERT_CRITICAL));
+
+    /* Al sumar un 3er dia de descanso en la misma ventana (dia 8 con dia 2..8 = 3 descansos), si se penaliza */
+    DailyHealthSample s8;
+    sample_from_baseline(&s8, &a.baseline, 8);
+    s8.dia_descanso = 1;
+    s8.ejercicio_min = 0;
+    assert(astronaut_add_sample(&a, &s8) == OK);
+    astronaut_compute_window_averages(&a, 7, NULL, &ej_7d, NULL, NULL);
+    assert(ej_7d < 60.0f);
+    evaluate_astronaut(&a, &env);
+    assert(has_alert_rule(&a.report, "GRAV_BONE_CAUT", ALERT_CAUTION));
+
+    /* Mareo espacial (SMS) severo en microgravedad 0g (>= 5) debe disparar alerta vestibular y NO-GO */
+    DailyHealthSample s_sms;
+    sample_from_baseline(&s_sms, &a.baseline, 9);
+    s_sms.mareo_vestibular = 5;
+    assert(astronaut_add_sample(&a, &s_sms) == OK);
+    evaluate_astronaut(&a, &env);
+    assert(has_alert_rule(&a.report, "GRAV_VESTIBULAR_DYNAMIC", ALERT_CAUTION));
+    assert(a.report.eva_aptitude == APT_NO_GO);
+}
+
+static void test_countermeasure_step_format_and_cycle_alignment(void) {
+    static AppState st;
+    assert(storage_load_all(&st, "data") == OK);
+    assert(st.astronaut_count == 4);
+
+    /* Verificar alineacion dia_ciclo <-> fase_ciclo en tripulantes femeninas semilla */
+    for (int i = 0; i < st.astronaut_count; i++) {
+        const Astronaut *a = &st.astronauts[i];
+        if (a->sexo[0] == 'F') {
+            for (int j = 0; j < a->history.count; j++) {
+                const DailyHealthSample *s = ring_buffer_get_chronological(&a->history, j);
+                assert(s != NULL);
+                if (s->dia_ciclo >= 1 && s->dia_ciclo <= 5) assert(s->fase_ciclo == CYCLE_MENSTRUAL);
+                else if (s->dia_ciclo >= 6 && s->dia_ciclo <= 13) assert(s->fase_ciclo == CYCLE_FOLLICULAR);
+                else if (s->dia_ciclo >= 14 && s->dia_ciclo <= 16) assert(s->fase_ciclo == CYCLE_OVULATORY);
+                else if (s->dia_ciclo >= 17 && s->dia_ciclo <= 28) assert(s->fase_ciclo == CYCLE_LUTEAL);
+            }
+        }
+    }
+
+    /* Verificar que todas las alertas en todos los escenarios tengan contramedida en pasos 1) ... */
+    const char *scenarios[] = {
+        "SPE_STORM", "HYPOXIA", "HYPERCAPNIA", "SANS_SLEEP",
+        "FATIGUE_ISOLATION", "DCS_EVA", "HORMONAL_FEMALE"
+    };
+    Mission *m = state_find_mission(&st, "artemis_sim");
+    assert(m != NULL);
+
+    for (size_t k = 0; k < sizeof(scenarios) / sizeof(scenarios[0]); k++) {
+        assert(simulate_mission_scenario(&st, m, scenarios[k]) == OK);
+        int total_alerts = 0;
+        for (int i = 0; i < st.astronaut_count; i++) {
+            const EvaluationReport *rep = &st.astronauts[i].report;
+            for (int a = 0; a < rep->alert_count; a++) {
+                total_alerts++;
+                const char *cm = rep->alerts[a].contramedida;
+                assert(strncmp(cm, "1)", 2) == 0);
+                assert(strlen(cm) < sizeof(rep->alerts[a].contramedida) - 4);
+            }
+        }
+        assert(total_alerts > 0);
+    }
+}
+
 int main(void) {
     printf("===================================================================\n");
     printf("  Running NASA HRP Health Engine, Storage & HTTP REST Tests (C11)\n");
@@ -948,8 +1060,10 @@ int main(void) {
     RUN_TEST(test_rule6_immune_and_metabolic);
     RUN_TEST(test_rule7_8_isolation_sleep_and_distance);
     RUN_TEST(test_rule9_female_hormonal_physiology);
+    RUN_TEST(test_rest_day_and_microgravity_sms);
     RUN_TEST(test_seed_storage_and_simulations);
     RUN_TEST(test_http_rest_api_and_static_files);
+    RUN_TEST(test_countermeasure_step_format_and_cycle_alignment);
 
     printf("-------------------------------------------------------------------\n");
     printf("  RESULTS: %d / %d tests passed successfully!\n", g_tests_passed, g_tests_run);

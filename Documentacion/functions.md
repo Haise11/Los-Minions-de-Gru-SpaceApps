@@ -29,9 +29,9 @@ Todos los tipos base del dominio se centralizan en un único header (`health_typ
 * **`HormonalCyclePhase` (Fisiología hormonal femenina):**
   * `CYCLE_NA` (`0`) — No aplica / Masculino
   * `CYCLE_MENSTRUAL` (`1`) — Menstrual (Días 1–5)
-  * `CYCLE_FOLLICULAR` (`2`) — Folicular (Días 6–12)
-  * `CYCLE_OVULATORY` (`3`) — Ovulatoria (Días 13–15)
-  * `CYCLE_LUTEAL` (`4`) — Lútea (Días 16–28, termogénesis por progesterona)
+  * `CYCLE_FOLLICULAR` (`2`) — Folicular (Días 6–13)
+  * `CYCLE_OVULATORY` (`3`) — Ovulatoria (Días 14–16)
+  * `CYCLE_LUTEAL` (`4`) — Lútea (Días 17–28, termogénesis por progesterona)
   * `CYCLE_SUPPRESSED` (`5`) — Suprimido (LARC / Anticonceptivo)
 * **Bitmask de síntomas y contramedidas (`SymptomFlags`):**
   * `SYM_NONE` (`0`)
@@ -60,7 +60,7 @@ Todos los tipos base del dominio se centralizan en un único header (`health_typ
    * `dia_mision` (`int`), `timestamp_unix` (`long`).
    * *Vitales:* `fc` (lpm), `pa_sis` (mmHg), `pa_dia` (mmHg), `spo2` (%), `temp_c` (°C), `glucosa_mg_dl` (mg/dL), `peso_kg` (kg).
    * *Radiación:* `dosis_dia_msv` (mSv del día, incluyendo componente neutrónico).
-   * *Riesgos espaciales específicos:* `vision_actual` (índice relativo), `dolor_cabeza` (0–10), `mareo_vestibular` (0–10), `ejercicio_min` (min/día), `tuvo_eva` (`int` 0/1), `pre_resp_o2_min` (min de pre-respiración O2), `sintomas_flags` (`unsigned int`).
+   * *Riesgos espaciales específicos:* `vision_actual` (índice relativo), `dolor_cabeza` (0–10), `mareo_vestibular` (0–10), `ejercicio_min` (min/día), `dia_descanso` (`int` 0/1 — descanso muscular programado), `tuvo_eva` (`int` 0/1), `pre_resp_o2_min` (min de pre-respiración O2), `sintomas_flags` (`unsigned int`).
    * *Conductual y nutrición:* `sueno_horas` (h), `sueno_calidad` (1–5), `animo` (1–10), `estres` (1–10), `cognitivo_ms` (ms), `cohesion_equipo` (1–5), `apetito_comida` (1–5), `calorias_kcal` (kcal), `hidratacion_ml` (ml).
    * *Fisiología hormonal femenina (Regla 9):* `fase_ciclo` (`HormonalCyclePhase` 0–5), `dia_ciclo` (`int` 0–60), `flujo_menstrual` (`int` 0–3), `colico_menstrual` (`int` 0–10), `suplemento_hierro` (`int` 0/1).
 3. **`Astronaut`:**
@@ -88,8 +88,8 @@ Todos los tipos base del dominio se centralizan en un único header (`health_typ
 ### 1.3 Operaciones, Validación y Seguridad (`astronaut.h/.c`, `mission.h/.c`)
 * **Constructores / Inicializadores:** `astronaut_init_from_defaults()`, `mission_init()`.
 * **Sanitización de IDs:** `is_valid_id(const char *id)` exige exclusivamente `[a-zA-Z0-9_-]` (1..15 chars) para prevenir *path traversal* al abrir `data/astronauts/<id>.json` o `data/missions/<id>.json`.
-* **Muestras parciales (Check-in rápido):** si un `POST /api/astronauts/:id/samples` envía solo un subconjunto de campos (por ej. `sueno_horas`, `animo`, `estres` y `sintomas_flags`), el backend completa los campos omitidos usando la última muestra del astronauta (o su `baseline` si es la primera muestra) antes de validar.
-* **Validadores de entrada (`validate_sample()` / `validate_cabin()`):** verifican rangos fisiológicos y físicos posibles (`temp_c` 30.0–43.0, `spo2` 40.0–100.0, `fc` 25–230, `pa_sis` 50–250, `pa_dia` 30–150, `sueno_horas` 0.0–24.0, `presion_cabina_kpa` 20.0–120.0, `po2_kpa` 5.0–105.0, `pco2_kpa` 0.0–10.0) devolviendo códigos claros (`OK`, `ERR_INVALID_RANGE`, `ERR_INVALID_ID`, `ERR_NOT_FOUND`, `ERR_LIMIT_REACHED`).
+* **Muestras parciales (Check-in rápido):** si un `POST /api/astronauts/:id/samples` envía solo un subconjunto de campos (por ej. `sueno_horas`, `animo`, `estres` y `sintomas_flags`), el backend completa los campos omitidos usando la última muestra del astronauta (o su `baseline` si es la primera muestra) antes de validar, reiniciando `dia_descanso = 0` cuando se registra un nuevo `dia_mision`.
+* **Validadores de entrada (`validate_sample()` / `validate_cabin()`):** verifican rangos fisiológicos y físicos posibles (`temp_c` 30.0–43.0, `spo2` 40.0–100.0, `fc` 25–230, `pa_sis` 50–250, `pa_dia` 30–150, `sueno_horas` 0.0–24.0, `dia_descanso` 0–1, `presion_cabina_kpa` 20.0–120.0, `po2_kpa` 5.0–105.0, `pco2_kpa` 0.0–10.0) devolviendo códigos claros (`OK`, `ERR_INVALID_RANGE`, `ERR_INVALID_ID`, `ERR_NOT_FOUND`, `ERR_LIMIT_REACHED`).
 
 ---
 
@@ -108,7 +108,7 @@ typedef struct {
 ### Reglas de consistencia del Buffer Circular
 1. **Inserción en `O(1)`:** sin fragmentación de memoria ni `memmove`. Al llenarse (`count == MAX_HISTORY_SAMPLES`), sobrescribe la muestra más antigua.
 2. **Acumulador de radiación separado:** `radiacion_mision_msv` suma `dosis_dia_msv` al registrar cada nueva muestra y **nunca** se recalcula recorriendo el buffer, evitando perder dosis histórica tras superar las 90 muestras.
-3. **Promedios por días reales (`dia_mision`):** al calcular el promedio de los últimos $K$ días (3 o 7), las funciones auxiliares filtran muestras con `dia_mision > dia_actual - K` (o actualizan el registro si ya existe una muestra para el mismo `dia_mision`, evitando que múltiples check-ins en un mismo día distorsionen la ventana temporal).
+3. **Promedios por días reales (`dia_mision`) y días de descanso (`dia_descanso`):** al calcular el promedio de los últimos $K$ días (3 o 7), las funciones auxiliares filtran muestras con `dia_mision > dia_actual - K` (o actualizan el registro si ya existe una muestra para el mismo `dia_mision`). En la ventana semanal de ejercicio (`ejercicio_7d`), hasta `2` días marcados con `dia_descanso == 1` se excluyen del divisor para no penalizar días de recuperación muscular programados.
 
 ---
 
@@ -162,7 +162,7 @@ El núcleo evalúa al astronauta en **3 pasos** tras cada ingreso de muestra o c
 
 ### Paso 1: Análisis vs. Línea Base Personal y Tendencias
 * Desviación respecto a baseline (`delta = actual - baseline`, y `%` de variación).
-* Promedios móviles por `dia_mision`: ventana de **3 días** (sueño, fatiga aguda, hidratación) y **7 días** (ejercicio semanal, ingesta calórica, tendencia de peso).
+* Promedios móviles por `dia_mision`: ventana de **3 días** (sueño, fatiga aguda, hidratación) y **7 días** (ejercicio semanal excluyendo hasta 2 `dia_descanso`, ingesta calórica, tendencia de peso).
 
 ### Paso 2: Las 9 Reglas Combinadas Trazables a NASA HRP
 1. **Radiación Espacial (`HAZARD_RADIATION` -> `SYS_RADIATION`):**
@@ -172,13 +172,13 @@ El núcleo evalúa al astronauta en **3 pasos** tras cada ingreso de muestra o c
    * `vision_actual <= baseline.vision_base - 0.15` **Y** (`dolor_cabeza >= 4` o `pa_sis >= pa_sis_base + 20`) -> `ALERT_CAUTION` (o `ALERT_CRITICAL` si `vision_actual <= baseline.vision_base - 0.25`). Ref: `"Risk of SANS / Thigh Cuff / Brain Fluid Pressure"`. Contramedida: iniciar protocolo **Thigh Cuff** (`SYM_THIGH_CUFF_ACTIVE`), verificar suplementación **B-Complex** (`SYM_B_COMPLEX_TAKEN`) y realizar examen de fondo de ojo / ecografía óptica (*Tempus Pro*).
 3. **Hipoxia e Hipercapnia (`HAZARD_CLOSED_ENV` -> `SYS_RESPIRATORY_EVA`):**
    * *Hipoxia:* `spo2 < 94.0` o `env.po2_kpa < 18.0` -> `ALERT_CAUTION`; `spo2 < 90.0` o `env.po2_kpa < 15.0` -> `ALERT_CRITICAL`. Ref: `"Risk of Hypoxia / Tempus Pro"`. Contramedida: administrar O2 suplementario, inspeccionar sistema ECLSS y reducir esfuerzo físico.
-   * *Hipercapnia (CO2 alto):* `env.pco2_kpa > 0.5` **Y** (`dolor_cabeza >= 4` o `cognitivo_ms > baseline.cognitivo_base_ms * 1.20`) -> `ALERT_CAUTION` (`ALERT_CRITICAL` si `pco2_kpa > 0.8`). Ref: `"Hostile Closed Environments / ECLSS"`. Contramedida: revisar depurador (*scrubber*) de CO2 y ventilar módulo antes de atribuir síntomas a fatiga.
+   * *Hipercapnia (CO2 alto):* `env.pco2_kpa > 0.5` **Y** (`dolor_cabeza >= 4` o `cognitivo_ms > baseline.cognitivo_base_ms * 1.20`) -> `ALERT_CAUTION` (`ALERT_CRITICAL` si `pco2_kpa > 0.8`). Ref: `"Hostile Closed Environments / ECLSS"`. Contramedida: inspeccionar depurador nominal (**CDRA/CAMRAS**; usar **LiOH** solo como respaldo de emergencia) y ventilar módulo antes de atribuir síntomas a fatiga.
 4. **Enfermedad por Descompresión — DCS (`HAZARD_CLOSED_ENV` -> `SYS_RESPIRATORY_EVA`):**
    * `tuvo_eva == 1` **Y** (`pre_resp_o2_min < baseline.pre_resp_o2_objetivo_min` o `sintomas_flags & SYM_EVA_JOINT_PAIN`) -> `ALERT_CRITICAL`. Ref: `"Risk of Decompression Sickness / EVA"`. Contramedida: protocolo inmediato de O2 al 100%, evaluación neurológica y preparación de recompresión en esclusa/traje.
 5. **Sistema Cardiovascular, Hemostasia Venosa, Óseo, Vestibular y Cargas Dinámicas (`HAZARD_GRAVITY` -> `SYS_CARDIOVASCULAR` / `SYS_MUSCULOSKELETAL` / `SYS_NEURO_OCULAR`):**
    * *Cardio/Orto y Hemostasia Venosa:* `fc > fc_base + 25` o `fc > 105` o `fc < 45` o `pa_sis < 90` o `pa_sis > 140` o `SYM_ORTHOSTATIC_DIZZINESS` o deshidratación sostenida en microgravedad (`hidratacion_ml < 0.75 * hidratacion_objetivo_ml`) -> `ALERT_CAUTION` (`ALERT_CRITICAL` si `pa_sis < 85` o `fc > 130`). Ref: `"Cardiovascular Adaptations / Venous Haemostasis / Tempus Pro"`. Contramedida: carga de fluidos/electrolitos, prendas de compresión inferior, monitoreo vascular/ECG.
-   * *Óseo/Muscular:* promedio 7 días de `ejercicio_min < 60` -> `ALERT_CAUTION` (`< 45` -> `ALERT_CRITICAL` o refuerzo prioritario). Ref: `"Zero-T2 / Risk of Bone Changes"`. Contramedida: reforzar rutina resistiva/aeróbica (*ARED* / *Zero-T2*) y verificar `SYM_VIT_D_TAKEN`.
-   * *Vestibular y Cargas Dinámicas:* `mareo_vestibular >= 5` en `GRAV_MOON` / `GRAV_MARS` / `GRAV_EARTH`, o `env.gravedad_actual == GRAV_DYNAMIC` con desacondicionamiento/mareo (`mareo_vestibular >= 4` o prom. 7d `ejercicio_min < 60`) -> `ALERT_CAUTION` (`eva_aptitude = APT_NO_GO`). Ref: `"Sensorimotor & Vestibular / Dynamic Loads / Manual Piloting"`. Contramedida: diferir pilotaje manual y tareas EVA por 24–48 h; asegurar soporte de protección de ocupante.
+   * *Óseo/Muscular:* promedio 7 días de `ejercicio_min < 60` -> `ALERT_CAUTION` (`< 45` -> `ALERT_CRITICAL` o refuerzo prioritario). Ref: `"Zero-T2 / Risk of Bone Changes"`. Contramedida: reforzar rutina resistiva/aeróbica (*ARED* / *CEVIS* / protocolo sin cinta *Zero-T2*) y verificar `SYM_VIT_D_TAKEN`.
+   * *Vestibular y Cargas Dinámicas:* `mareo_vestibular >= 5` (tanto *Space Motion Sickness* en `GRAV_MICRO` `0g` como desorientación en `GRAV_MOON`/`MARS`/`EARTH`), o `env.gravedad_actual == GRAV_DYNAMIC` con desacondicionamiento/mareo (`mareo_vestibular >= 4` o prom. 7d `ejercicio_min < 60`) -> `ALERT_CAUTION` (`eva_aptitude = APT_NO_GO`). Ref: `"Sensorimotor & Vestibular / Dynamic Loads / Manual Piloting"`. Contramedida: diferir pilotaje manual y tareas EVA por 24–48 h; asegurar soporte de protección de ocupante.
 6. **Inmunidad, Microbioma y Metabolismo (`HAZARD_CLOSED_ENV` -> `SYS_IMMUNE`):**
    * `temp_c >= 37.8` o `(sintomas_flags & (SYM_VIRAL_REACTIVATION | SYM_INFECTION_SIGNS | SYM_RASH_ALLERGY))` o alteración glucémica (`glucosa_mg_dl < 70.0` o `> 140.0`) -> `ALERT_CAUTION` (`ALERT_CRITICAL` si `temp_c >= 39.0` o signos combinados). Ref: `"Immune Biomarkers / Host-Microorganism / Standard Measures"`. Contramedida: aislar/reducir contacto cercano, tomar muestra de saliva seca, estabilizar glucemia, revisar filtros de aire y cultivos (*Veggie*).
 7. **Aislamiento, Sueño, Cohesión de Equipo y Nutrición (`HAZARD_ISOLATION` -> `SYS_BEHAVIORAL`):**

@@ -6,7 +6,7 @@
   <title>P.U.L.S.O. — Monitor Médico de Tripulación</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -22,42 +22,87 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button id="nav-mostrar" class="nav-btn active" type="button" data-abbr="TR" onclick="switchOptionView('mostrar', true)" title="TRIPULACIÓN — Credenciales y Panel Clínico">
+        <button id="nav-mostrar" class="nav-btn active" type="button" onclick="switchOptionView('mostrar', true)" title="TRIPULACIÓN — Credenciales y Panel Clínico">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="7.5" r="3.2"/>
+              <path d="M3.5 19.5c0-3.1 2.4-5.2 5.5-5.2s5.5 2.1 5.5 5.2"/>
+              <circle cx="17" cy="9" r="2.3"/>
+              <path d="M15.8 14.6c2.5.3 4.4 2.1 4.7 4.9"/>
+            </svg>
+          </span>
           <div class="nav-btn-text">
             <strong>TRIPULACIÓN</strong>
             <small>Credenciales y Estado Clínico</small>
           </div>
         </button>
 
-        <button id="nav-checkin" class="nav-btn" type="button" data-abbr="CK" onclick="switchOptionView('checkin')" title="CHECK IN — Control Diario de Tripulación">
+        <button id="nav-checkin" class="nav-btn" type="button" onclick="switchOptionView('checkin')" title="CHECK IN — Control Diario de Tripulación">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="4" width="14" height="17" rx="2"/>
+              <path d="M9 4.5h6"/>
+              <path d="M8.5 12.5l2.3 2.3 4.7-4.8"/>
+            </svg>
+          </span>
           <div class="nav-btn-text">
             <strong>CHECK IN</strong>
             <small>Control Diario y Reflejos</small>
           </div>
         </button>
 
-        <button id="nav-promedio" class="nav-btn" type="button" data-abbr="PS" onclick="switchOptionView('promedio')" title="PROMEDIO DE SALUD — Resumen Clínico y Cabina">
+        <button id="nav-promedio" class="nav-btn" type="button" onclick="switchOptionView('promedio')" title="PROMEDIO DE SALUD — Resumen Clínico y Cabina">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <path d="M6 13h3l1.8-4.5 2.6 7 1.8-3.5H18"/>
+            </svg>
+          </span>
           <div class="nav-btn-text">
             <strong>PROMEDIO DE SALUD</strong>
             <small>Resumen Clínico y Cabina</small>
           </div>
         </button>
 
-        <button id="nav-glosario" class="nav-btn" type="button" data-abbr="GL" onclick="switchOptionView('glosario')" title="GLOSARIO — Protocolos, Síntomas, Medidas y Siglas">
+        <button id="nav-glosario" class="nav-btn" type="button" onclick="switchOptionView('glosario')" title="GLOSARIO — Protocolos, Síntomas, Medidas y Siglas">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H12v17H6.5A2.5 2.5 0 0 0 4 22V5.5z"/>
+              <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H12v17h5.5a2.5 2.5 0 0 1 2.5 2V5.5z"/>
+            </svg>
+          </span>
           <div class="nav-btn-text">
             <strong>GLOSARIO</strong>
             <small>Protocolos · Medidas · Siglas</small>
           </div>
         </button>
 
-        <button id="nav-cargar" class="nav-btn" type="button" data-abbr="CA" onclick="switchOptionView('cargar')" title="CARGAR ASTRONAUTA — Nuevo o Cargar con JSON">
+        <button id="nav-cargar" class="nav-btn" type="button" onclick="switchOptionView('cargar')" title="CARGAR ASTRONAUTA — Nuevo o Cargar con JSON">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="10" cy="8" r="3.4"/>
+              <path d="M3.8 19.5c0-3.3 2.7-5.5 6.2-5.5 1.3 0 2.5.3 3.5.9"/>
+              <path d="M18 13v6"/>
+              <path d="M15 16h6"/>
+            </svg>
+          </span>
           <div class="nav-btn-text">
             <strong>CARGAR ASTRONAUTA</strong>
             <small>Nuevo / Cargar con JSON</small>
           </div>
         </button>
 
-        <button id="nav-modificar" class="nav-btn" type="button" data-abbr="MA" onclick="switchOptionView('modificar')" title="MODIFICAR ASTRONAUTA — Editar Datos, Foto, Bitácora y Eliminar">
+        <button id="nav-modificar" class="nav-btn" type="button" onclick="switchOptionView('modificar')" title="MODIFICAR ASTRONAUTA — Editar Datos, Foto, Bitácora y Eliminar">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7h10"/>
+              <circle cx="17" cy="7" r="2"/>
+              <path d="M10 12h10"/>
+              <circle cx="7" cy="12" r="2"/>
+              <path d="M4 17h12"/>
+              <circle cx="18" cy="17" r="2"/>
+            </svg>
+          </span>
           <div class="nav-btn-text">
             <strong>MODIFICAR ASTRONAUTA</strong>
             <small>Editar Datos · Foto · Bitácora</small>
@@ -164,6 +209,9 @@
             </select>
           </div>
         </div>
+
+        <!-- Panel proactivo de recordatorios y rutina de mision -->
+        <div id="crew-routine-nudges" class="routine-nudges-panel hidden" aria-live="polite"></div>
 
         <!-- Grilla de tarjetas de tripulantes -->
         <div id="crew-grid" class="crew-grid"></div>
@@ -404,6 +452,7 @@
             <!-- Columna 2: Alertas Clinicas + Contramedidas + Panel Hormonal Femenino -->
             <div class="detail-box">
               <h3 class="box-title">ASISTENTE DE CONTRAMEDIDAS Y ALERTAS CLÍNICAS</h3>
+              <div id="detail-routine-nudges" class="detail-routine-nudges hidden"></div>
               <div id="detail-alerts-list" class="alerts-list"></div>
 
               <div class="countermeasure-quick-bar">
@@ -411,36 +460,36 @@
                 <div class="cm-toggle-grid">
                   <button type="button" id="cm-btn-cuff" class="cm-action-card" onclick="toggleQuickCountermeasure(32)">
                     <div class="cm-card-top">
-                      <strong>🦵 Banda en Muslos</strong>
+                      <strong>Banda en Muslos</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>Retiene fluidos en piernas para aliviar presión craneal y ocular.</small>
+                    <small>1) Ajustar en muslo superior 2–4 h diurnas. 2) Retirar al dormir o si hay hormigueo.</small>
                   </button>
                   <button type="button" id="cm-btn-bcomp" class="cm-action-card" onclick="toggleQuickCountermeasure(64)">
                     <div class="cm-card-top">
-                      <strong>💊 Complejo B</strong>
+                      <strong>Complejo B</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>Soporte neuro-vascular y metabólico ante riesgo ocular SANS.</small>
+                    <small>1) Tomar 1 dosis oral diaria con comida. 2) Priorizar ante indicios SANS o ferropenia.</small>
                   </button>
                   <button type="button" id="cm-btn-vitd" class="cm-action-card" onclick="toggleQuickCountermeasure(128)">
                     <div class="cm-card-top">
-                      <strong>☀ Vitamina D3</strong>
+                      <strong>Vitamina D3</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>Protege densidad ósea ante ausencia de radiación solar directa.</small>
+                    <small>1) Tomar 1 dosis diaria con comida principal. 2) Combinar con carga ARED / CEVIS.</small>
                   </button>
                   <button type="button" id="cm-btn-veggie" class="cm-action-card" onclick="toggleQuickCountermeasure(256)">
                     <div class="cm-card-top">
-                      <strong>🥗 Dieta Vegetal Fresca</strong>
+                      <strong>Dieta Vegetal Fresca</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>Aporte de antioxidantes y vegetales frescos cultivados a bordo.</small>
+                    <small>1) Sumar 1 porción fresca del módulo Veggie hoy. 2) Acompañar con hidratación.</small>
                   </button>
                 </div>
 
                 <div class="cm-action-summary-box">
-                  <div class="cm-summary-header">📋 CÓMO ACTUAR EN CADA CONTRAMEDIDA EFECTUADA</div>
+                  <div class="cm-summary-header">PROTOCOLO OPERATIVO DE CADA CONTRAMEDIDA ACTIVA</div>
                   <div id="cm-action-summary-list" class="cm-action-summary-list"></div>
                 </div>
               </div>
@@ -455,10 +504,10 @@
                 <div class="hormonal-actions-row">
                   <button type="button" id="cm-btn-iron" class="cm-action-card cm-chip-fem" onclick="toggleFemaleIronCountermeasure()">
                     <div class="cm-card-top">
-                      <strong>💊 Suplemento Hierro + Hidratación (+350 ml)</strong>
+                      <strong>Suplemento Hierro + Hidratación (+350 ml)</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>Compensa pérdida menstrual, previene anemia y estabiliza la volemia.</small>
+                    <small>1) Tomar 1 dosis de hierro elemental + 350 ml con electrolitos. 2) Evitar café/té 1 h.</small>
                   </button>
                 </div>
                 <div id="cm-fem-action-summary" class="cm-fem-action-summary hidden"></div>
@@ -537,9 +586,9 @@
           <h2 class="section-heading">✓ CHECK IN · CONTROL DIARIO DE TRIPULACIÓN</h2>
         </div>
 
-        <div id="checkin-panel" class="cargar-panel">
-          <form id="checkin-form" onsubmit="submitCrewCheckin(event)">
-            <div class="form-top-row">
+        <div id="checkin-panel" class="cargar-panel form-scroll-wrapper">
+          <form id="checkin-form" class="form-scroll-flow" onsubmit="submitCrewCheckin(event)">
+            <div class="form-top-row form-top-row-comfortable">
               <div class="form-group">
                 <label for="ci-astronaut">Tripulante a Evaluar</label>
                 <select id="ci-astronaut" class="console-input" onchange="prefillCheckinFromAstronaut(this.value)" required></select>
@@ -548,7 +597,7 @@
                 <label for="ci-dia">Día de Registro</label>
                 <input type="number" id="ci-dia" class="console-input" min="1" max="9999" value="14" required />
               </div>
-              <div class="form-group">
+              <div class="form-group form-group-action">
                 <label>&nbsp;</label>
                 <button type="button" class="action-btn btn-secondary" onclick="prefillCheckinFromAstronaut(document.getElementById('ci-astronaut').value)">
                   ↻ Rellenar con Última Muestra
@@ -556,193 +605,216 @@
               </div>
             </div>
 
-            <div class="form-columns">
-              <!-- Campos rapidos conductuales y sintomas -->
-              <div class="form-card">
-                <h3 class="box-title">MÉTRICAS RÁPIDAS DE SUEÑO, CONDUCTA Y SÍNTOMAS</h3>
-                <div class="input-grid-2">
-                  <div class="form-group">
-                    <label for="ci-sueno-horas">Horas de Sueño (0–24 h)</label>
-                    <input type="number" step="0.1" min="0" max="24" id="ci-sueno-horas" class="console-input" value="7.5" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-sueno-calidad">Calidad de Sueño (1–5)</label>
-                    <input type="number" min="1" max="5" id="ci-sueno-calidad" class="console-input" value="4" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-animo">Estado de Ánimo (1–10)</label>
-                    <input type="number" min="1" max="10" id="ci-animo" class="console-input" value="8" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-estres">Nivel de Estrés (1–10)</label>
-                    <input type="number" min="1" max="10" id="ci-estres" class="console-input" value="3" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-cohesion">Cohesión de Equipo (1–5)</label>
-                    <input type="number" min="1" max="5" id="ci-cohesion" class="console-input" value="5" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-apetito">Apetito / Menú (1–5)</label>
-                    <input type="number" min="1" max="5" id="ci-apetito" class="console-input" value="4" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-dolor-cabeza">Dolor de Cabeza (0–10)</label>
-                    <input type="number" min="0" max="10" id="ci-dolor-cabeza" class="console-input" value="0" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-mareo">Mareo Vestibular (0–10)</label>
-                    <input type="number" min="0" max="10" id="ci-mareo" class="console-input" value="0" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-ejercicio">Ejercicio ARED/Zero-T2 (min)</label>
-                    <input type="number" min="0" max="600" id="ci-ejercicio" class="console-input" value="90" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-cognitivo">Tiempo de Reacción (ms)</label>
-                    <input type="number" step="1" min="50" max="5000" id="ci-cognitivo" class="console-input" value="255" required />
-                  </div>
-                </div>
+            <div id="ci-routine-nudges" class="routine-nudges-panel routine-nudges-compact hidden" aria-live="polite"></div>
 
-                <!-- Mini-Test Interactivo de Reflejos -->
-                <div class="reflex-box">
-                  <div class="reflex-header">
-                    <div>
-                      <strong>🎯 Mini-Test Psicomotor de Reflejos (PVT · 3 Toques)</strong>
-                      <p class="reflex-desc">Mide automáticamente el tiempo de reacción real en milisegundos.</p>
-                    </div>
-                    <button type="button" id="reflex-start-btn" class="action-btn btn-primary" onclick="startReflexTest()">
-                      Medir Reflejos (3 toques)
-                    </button>
-                  </div>
-                  <div id="reflex-arena" class="reflex-arena hidden" onclick="handleReflexArenaTap()">
-                    <span id="reflex-prompt">Prepárate... espera a que el panel cambie a VERDE</span>
-                  </div>
+            <!-- Bloque 1: Rutina Fisica y Descanso Programado -->
+            <div class="form-card form-card-spacious">
+              <h3 class="box-title">1 · RUTINA DIARIA DE EJERCICIO Y DESCANSO PROGRAMADO</h3>
+              <div class="input-grid-comfortable">
+                <div class="form-group">
+                  <label for="ci-ejercicio">Ejercicio Activo (ARED / CEVIS / Zero-T2) (min)</label>
+                  <input type="number" min="0" max="600" id="ci-ejercicio" class="console-input" value="90" required />
                 </div>
+                <div class="form-group">
+                  <label for="ci-hidratacion">Hidratación Diaria (ml)</label>
+                  <input type="number" step="50" min="0" max="10000" id="ci-hidratacion" class="console-input" value="2500" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-calorias">Calorías Consumidas (kcal)</label>
+                  <input type="number" step="10" min="0" max="10000" id="ci-calorias" class="console-input" value="2500" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-apetito">Apetito / Tolerancia al Menú (1–5)</label>
+                  <input type="number" min="1" max="5" id="ci-apetito" class="console-input" value="4" required />
+                </div>
+              </div>
+              <div class="eva-check-row">
+                <label class="checkbox-item">
+                  <input type="checkbox" id="ci-dia-descanso" onchange="onCheckinRestDayToggle(this.checked)" />
+                  <span>Hoy es Día de Descanso Programado (descarga muscular — máx. 1–2/semana sin penalizar promedio 7d)</span>
+                </label>
+              </div>
+            </div>
 
-                <!-- Bloque de Salud Hormonal y Ciclo Menstrual (solo tripulacion femenina) -->
-                <div id="ci-hormonal-box" class="hormonal-checkin-box hidden">
-                  <div class="hormonal-box-header">
-                    <strong>♀ SALUD HORMONAL Y CICLO MENSTRUAL</strong>
-                    <span id="ci-hormonal-sex-note" class="cycle-phase-pill">Fisiología Femenina</span>
-                  </div>
-                  <div class="input-grid-2">
-                    <div class="form-group">
-                      <label for="ci-fase-ciclo">Fase del Ciclo Hormonal</label>
-                      <select id="ci-fase-ciclo" class="console-input">
-                        <option value="0">0 — No Aplica / Sin Ciclo</option>
-                        <option value="1">1 — Menstrual (Días 1–5)</option>
-                        <option value="2">2 — Folicular (Días 6–12)</option>
-                        <option value="3">3 — Ovulatoria (Días 13–15)</option>
-                        <option value="4">4 — Lútea (Días 16–28 · Termogénesis)</option>
-                        <option value="5">5 — Suprimido (LARC / Anticonceptivo)</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="ci-dia-ciclo">Día del Ciclo (0–60)</label>
-                      <input type="number" min="0" max="60" id="ci-dia-ciclo" class="console-input" value="0" />
-                    </div>
-                    <div class="form-group">
-                      <label for="ci-flujo-menstrual">Flujo Menstrual</label>
-                      <select id="ci-flujo-menstrual" class="console-input">
-                        <option value="0">0 — Ninguno</option>
-                        <option value="1">1 — Leve</option>
-                        <option value="2">2 — Moderado</option>
-                        <option value="3">3 — Abundante (Vigilar Hierro)</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="ci-colico-menstrual">Cólico / Dismenorrea (0–10)</label>
-                      <input type="number" min="0" max="10" id="ci-colico-menstrual" class="console-input" value="0" />
-                    </div>
-                  </div>
-                  <div class="eva-check-row" style="margin-top: 8px;">
-                    <label class="checkbox-item fem-highlight">
-                      <input type="checkbox" id="ci-suplemento-hierro" />
-                      <span>Suplemento de Hierro (Fe) + Folato Activo (Prevención de Anemia Espacial)</span>
-                    </label>
-                  </div>
+            <!-- Bloque 2: Sueno, Conducta y PVT -->
+            <div class="form-card form-card-spacious">
+              <h3 class="box-title">2 · SUEÑO, ESTADO CONDUCTUAL Y VIGILANCIA PSICOMOTORA</h3>
+              <div class="input-grid-comfortable">
+                <div class="form-group">
+                  <label for="ci-sueno-horas">Horas de Sueño (0–24 h)</label>
+                  <input type="number" step="0.1" min="0" max="24" id="ci-sueno-horas" class="console-input" value="7.5" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-sueno-calidad">Calidad de Sueño (1–5)</label>
+                  <input type="number" min="1" max="5" id="ci-sueno-calidad" class="console-input" value="4" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-animo">Estado de Ánimo (1–10)</label>
+                  <input type="number" min="1" max="10" id="ci-animo" class="console-input" value="8" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-estres">Nivel de Estrés (1–10)</label>
+                  <input type="number" min="1" max="10" id="ci-estres" class="console-input" value="3" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-cohesion">Cohesión de Equipo (1–5)</label>
+                  <input type="number" min="1" max="5" id="ci-cohesion" class="console-input" value="5" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-cognitivo">Tiempo de Reacción PVT (ms)</label>
+                  <input type="number" step="1" min="50" max="5000" id="ci-cognitivo" class="console-input" value="255" required />
                 </div>
               </div>
 
-              <!-- Signos vitales, nutricion, EVA y sintomas -->
-              <div class="form-card">
-                <h3 class="box-title">SIGNOS VITALES, DOSIMETRÍA, EVA Y BIOMARCADORES</h3>
-                <div class="input-grid-3">
-                  <div class="form-group">
-                    <label for="ci-fc">FC (lpm)</label>
-                    <input type="number" step="0.5" min="25" max="230" id="ci-fc" class="console-input" value="70" required />
+              <!-- Mini-Test Interactivo de Reflejos -->
+              <div class="reflex-box">
+                <div class="reflex-header">
+                  <div>
+                    <strong>Mini-Test Psicomotor de Reflejos (PVT · 3 Toques)</strong>
+                    <p class="reflex-desc">Mide automáticamente el tiempo de reacción real en milisegundos.</p>
                   </div>
-                  <div class="form-group">
-                    <label for="ci-pa-sis">PA Sistólica (mmHg)</label>
-                    <input type="number" step="1" min="50" max="250" id="ci-pa-sis" class="console-input" value="120" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-pa-dia">PA Diastólica (mmHg)</label>
-                    <input type="number" step="1" min="30" max="150" id="ci-pa-dia" class="console-input" value="80" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-spo2">SpO₂ (%)</label>
-                    <input type="number" step="0.1" min="40" max="100" id="ci-spo2" class="console-input" value="98.2" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-temp">Temp (°C)</label>
-                    <input type="number" step="0.1" min="30" max="43" id="ci-temp" class="console-input" value="36.6" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-glucosa">Glucosa (mg/dL)</label>
-                    <input type="number" step="1" min="20" max="600" id="ci-glucosa" class="console-input" value="90" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-peso">Peso (kg)</label>
-                    <input type="number" step="0.1" min="20" max="250" id="ci-peso" class="console-input" value="72.0" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-vision">Visión (0.1–2.0)</label>
-                    <input type="number" step="0.01" min="0.05" max="2.5" id="ci-vision" class="console-input" value="1.00" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-dosis">Dosis Día (mSv)</label>
-                    <input type="number" step="0.01" min="0" max="5000" id="ci-dosis" class="console-input" value="0.50" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-calorias">Calorías (kcal)</label>
-                    <input type="number" step="10" min="0" max="10000" id="ci-calorias" class="console-input" value="2500" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-hidratacion">Hidratación (ml)</label>
-                    <input type="number" step="50" min="0" max="10000" id="ci-hidratacion" class="console-input" value="2500" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="ci-preresp">Pre-Resp O₂ (min)</label>
-                    <input type="number" step="5" min="0" max="600" id="ci-preresp" class="console-input" value="120" required />
-                  </div>
-                </div>
-
-                <div class="eva-check-row">
-                  <label class="checkbox-item eva-highlight">
-                    <input type="checkbox" id="ci-tuvo-eva" />
-                    <span>Realizó Caminata Espacial (EVA) hoy</span>
-                  </label>
-                </div>
-
-                <h4 class="sub-box-title">Síntomas Clínicos y Contramedidas Activas</h4>
-                <div class="flags-grid">
-                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="1" /> Sarpullido / Alergia</label>
-                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="2" /> Reactivación Viral</label>
-                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="4" /> Signos de Infección</label>
-                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="8" /> Dolor Articular Post-EVA</label>
-                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="16" /> Mareo Ortostático</label>
-                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="32" /> Banda de Compresión en Muslos</label>
-                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="64" /> Suplemento Complejo B</label>
-                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="128" checked /> Vitamina D3 Tomada</label>
-                  <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="256" /> Vegetales Frescos (Cultivo a bordo)</label>
-                </div>
-
-                <div class="form-submit-bar">
-                  <button type="submit" class="action-btn btn-primary btn-large">
-                    ✓ Registrar Control y Evaluar Salud
+                  <button type="button" id="reflex-start-btn" class="action-btn btn-primary" onclick="startReflexTest()">
+                    Medir Reflejos (3 toques)
                   </button>
                 </div>
+                <div id="reflex-arena" class="reflex-arena hidden" onclick="handleReflexArenaTap()">
+                  <span id="reflex-prompt">Prepárate... espera a que el panel cambie a VERDE</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloque 3: Signos Vitales y Metabolismo -->
+            <div class="form-card form-card-spacious">
+              <h3 class="box-title">3 · SIGNOS VITALES Y METABOLISMO</h3>
+              <div class="input-grid-comfortable">
+                <div class="form-group">
+                  <label for="ci-fc">Frecuencia Cardíaca (lpm)</label>
+                  <input type="number" step="0.5" min="25" max="230" id="ci-fc" class="console-input" value="70" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-spo2">Saturación SpO₂ (%)</label>
+                  <input type="number" step="0.1" min="40" max="100" id="ci-spo2" class="console-input" value="98.2" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-pa-sis">Presión Sistólica (mmHg)</label>
+                  <input type="number" step="1" min="50" max="250" id="ci-pa-sis" class="console-input" value="120" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-pa-dia">Presión Diastólica (mmHg)</label>
+                  <input type="number" step="1" min="30" max="150" id="ci-pa-dia" class="console-input" value="80" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-temp">Temperatura Corporal (°C)</label>
+                  <input type="number" step="0.1" min="30" max="43" id="ci-temp" class="console-input" value="36.6" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-glucosa">Glucemia (mg/dL)</label>
+                  <input type="number" step="1" min="20" max="600" id="ci-glucosa" class="console-input" value="90" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-peso">Peso Corporal (kg)</label>
+                  <input type="number" step="0.1" min="20" max="250" id="ci-peso" class="console-input" value="72.0" required />
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloque 4: Neuro-Ocular, Vestibular, Dosimetria y EVA -->
+            <div class="form-card form-card-spacious">
+              <h3 class="box-title">4 · NEURO-OCULAR (SANS), VESTIBULAR Y DOSIMETRÍA / EVA</h3>
+              <div class="input-grid-comfortable">
+                <div class="form-group">
+                  <label for="ci-vision">Índice Visual Funcional (0.1–2.0)</label>
+                  <input type="number" step="0.01" min="0.05" max="2.5" id="ci-vision" class="console-input" value="1.00" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-dolor-cabeza">Dolor de Cabeza (0–10)</label>
+                  <input type="number" min="0" max="10" id="ci-dolor-cabeza" class="console-input" value="0" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-mareo">Mareo Vestibular / SMS (0–10)</label>
+                  <input type="number" min="0" max="10" id="ci-mareo" class="console-input" value="0" required />
+                </div>
+                <div class="form-group">
+                  <label for="ci-dosis">Dosis de Radiación del Día (mSv)</label>
+                  <input type="number" step="0.01" min="0" max="5000" id="ci-dosis" class="console-input" value="0.50" required />
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label for="ci-preresp">Pre-Respiración O₂ EVA (min · ISLE ≥120)</label>
+                  <input type="number" step="5" min="0" max="600" id="ci-preresp" class="console-input" value="120" required />
+                </div>
+              </div>
+
+              <div class="eva-check-row">
+                <label class="checkbox-item eva-highlight">
+                  <input type="checkbox" id="ci-tuvo-eva" />
+                  <span>Realizó Caminata Espacial (EVA) hoy</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Bloque Hormonal Femenino (condicional) -->
+            <div id="ci-hormonal-box" class="form-card form-card-spacious hormonal-checkin-box hidden" style="margin-top: 0;">
+              <div class="hormonal-box-header">
+                <strong>♀ SALUD HORMONAL Y CICLO MENSTRUAL</strong>
+                <span id="ci-hormonal-sex-note" class="cycle-phase-pill">Fisiología Femenina</span>
+              </div>
+              <div class="input-grid-comfortable">
+                <div class="form-group">
+                  <label for="ci-fase-ciclo">Fase del Ciclo Hormonal</label>
+                  <select id="ci-fase-ciclo" class="console-input">
+                    <option value="0">0 — No Aplica / Sin Ciclo</option>
+                    <option value="1">1 — Menstrual (Días 1–5)</option>
+                    <option value="2">2 — Folicular (Días 6–13)</option>
+                    <option value="3">3 — Ovulatoria (Días 14–16)</option>
+                    <option value="4">4 — Lútea (Días 17–28 · Termogénesis)</option>
+                    <option value="5">5 — Suprimido (LARC / Anticonceptivo)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="ci-dia-ciclo">Día del Ciclo (0–60)</label>
+                  <input type="number" min="0" max="60" id="ci-dia-ciclo" class="console-input" value="0" />
+                </div>
+                <div class="form-group">
+                  <label for="ci-flujo-menstrual">Flujo Menstrual</label>
+                  <select id="ci-flujo-menstrual" class="console-input">
+                    <option value="0">0 — Ninguno</option>
+                    <option value="1">1 — Leve</option>
+                    <option value="2">2 — Moderado</option>
+                    <option value="3">3 — Abundante (Vigilar Hierro)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="ci-colico-menstrual">Cólico / Dismenorrea (0–10)</label>
+                  <input type="number" min="0" max="10" id="ci-colico-menstrual" class="console-input" value="0" />
+                </div>
+              </div>
+              <div class="eva-check-row" style="margin-top: 12px;">
+                <label class="checkbox-item fem-highlight">
+                  <input type="checkbox" id="ci-suplemento-hierro" />
+                  <span>Suplemento de Hierro (Fe) + Folato Activo (Prevención de Anemia Espacial)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Bloque 5: Sintomas y Contramedidas -->
+            <div class="form-card form-card-spacious">
+              <h3 class="box-title">5 · SÍNTOMAS CLÍNICOS Y CONTRAMEDIDAS ACTIVAS</h3>
+              <div class="flags-grid flags-grid-spacious">
+                <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="1" /> Sarpullido / Alergia</label>
+                <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="2" /> Reactivación Viral</label>
+                <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="4" /> Signos de Infección</label>
+                <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="8" /> Dolor Articular Post-EVA</label>
+                <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="16" /> Mareo Ortostático</label>
+                <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="32" /> Banda de Compresión en Muslos</label>
+                <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="64" /> Suplemento Complejo B</label>
+                <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="128" checked /> Vitamina D3 Tomada</label>
+                <label class="checkbox-item"><input type="checkbox" class="ci-flag-cb" value="256" /> Vegetales Frescos (Cultivo a bordo Veggie)</label>
+              </div>
+
+              <div class="form-submit-bar" style="margin-top: 22px;">
+                <button type="submit" class="action-btn btn-primary btn-large">
+                  ✓ Registrar Control y Evaluar Salud
+                </button>
               </div>
             </div>
           </form>
@@ -848,7 +920,7 @@
                     <label for="na-rad-previa">Radiación Previa Carrera (mSv)</label>
                     <input type="number" step="0.1" min="0" max="600" id="na-rad-previa" class="console-input" value="15.0" required />
                   </div>
-                  <div class="form-group" style="grid-column: span 2;">
+                  <div class="form-group" style="grid-column: 1 / -1;">
                     <label for="na-avatar-file">📷 Subir Fotografía Personalizada desde tu Dispositivo (PNG, JPG, WEBP, SVG)</label>
                     <div class="custom-avatar-upload-row">
                       <img id="na-avatar-preview" class="upload-preview-thumb" src="assets/avatars/astro_01.svg" alt="Vista previa de credencial" />
@@ -898,95 +970,95 @@
           </div>
         </div>
 
-        <div class="modify-selector-card">
-          <div class="form-top-row" style="margin-bottom: 0;">
+        <div class="modify-selector-card form-scroll-wrapper">
+          <div class="modify-selector-top">
             <div class="form-group">
               <label for="mod-astronaut-select">Seleccionar Astronauta a Modificar</label>
               <select id="mod-astronaut-select" class="console-input" onchange="loadAstronautForModify(this.value)"></select>
             </div>
-            <div class="form-group">
-              <label>Identificador y Último Estado</label>
-              <div id="mod-astro-meta-badge" class="mod-meta-badge">Selecciona un tripulante</div>
-            </div>
-            <div class="form-group">
+            <div class="form-group form-group-action">
               <label>&nbsp;</label>
               <button type="button" class="action-btn btn-secondary" onclick="loadAstronautForModify(document.getElementById('mod-astronaut-select').value)">
                 ↻ Recargar Datos Actuales
               </button>
             </div>
           </div>
+          <div class="modify-meta-row">
+            <span class="modify-meta-label">Identificador y Último Estado:</span>
+            <div id="mod-astro-meta-badge" class="mod-meta-badge">Selecciona un tripulante</div>
+          </div>
         </div>
 
-        <form id="modify-astronaut-form" onsubmit="submitModifyAstronaut(event)">
-          <div class="form-columns">
-            <!-- Columna 1: Perfil, Fotografia, Radiacion y Ultimo Registro Clinico -->
-            <div class="form-card">
-              <h3 class="box-title">DATOS PERSONALES, DOSIMETRÍA Y FOTO</h3>
-              <div class="input-grid-2">
-                <div class="form-group">
-                  <label for="mod-nombre">Nombre Completo</label>
-                  <input type="text" id="mod-nombre" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-sexo">Sexo Biológico</label>
-                  <select id="mod-sexo" class="console-input" onchange="toggleModifyHormonalVisibility()">
-                    <option value="F">♀ Femenino</option>
-                    <option value="M">♂ Masculino</option>
-                  </select>
-                </div>
-                <div class="form-group" style="grid-column: span 2;">
-                  <label for="mod-rol">Rol Clínico / Especialidad</label>
-                  <input type="text" id="mod-rol" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-rad-previa">Radiación Previa de Carrera (mSv)</label>
-                  <input type="number" step="0.1" min="0" max="10000" id="mod-rad-previa" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-rad-mision">Radiación Acumulada Actual (mSv)</label>
-                  <input type="number" step="0.01" min="0" max="10000" id="mod-rad-mision" class="console-input" required />
-                </div>
-                <div class="form-group" style="grid-column: span 2;">
-                  <label for="mod-avatar-select">Avatar Predefinido</label>
-                  <select id="mod-avatar-select" class="console-input" onchange="onModifyPredefinedAvatarChange(this.value)">
-                    <option value="assets/avatars/astro_01.svg">Retrato Credencial 01 (Comandante)</option>
-                    <option value="assets/avatars/astro_02.svg">Retrato Credencial 02 (Oficial Médico)</option>
-                    <option value="assets/avatars/astro_03.svg">Retrato Credencial 03 (Ingeniero)</option>
-                    <option value="assets/avatars/astro_04.svg">Retrato Credencial 04 (Especialista)</option>
-                  </select>
-                </div>
-                <div class="form-group" style="grid-column: span 2;">
-                  <label for="mod-avatar-file">📷 Cambiar Foto de Perfil desde el Dispositivo (PNG, JPG, WEBP, SVG)</label>
-                  <div class="custom-avatar-upload-row">
-                    <img id="mod-avatar-preview" class="upload-preview-thumb" src="assets/avatars/astro_01.svg" alt="Vista previa del astronauta" />
-                    <div class="custom-avatar-upload-controls">
-                      <input type="file" id="mod-avatar-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="console-input" onchange="onModifyAvatarFileSelected(event)" />
-                      <small id="mod-avatar-status" class="upload-status-note">Se conserva la foto actual salvo que elijas otra</small>
-                    </div>
-                    <button type="button" class="action-btn btn-secondary" onclick="clearModifyCustomAvatar()">Restaurar Foto</button>
+        <form id="modify-astronaut-form" class="form-scroll-flow" onsubmit="submitModifyAstronaut(event)">
+          <!-- Seccion 1: Datos Personales, Dosimetria y Foto -->
+          <div class="form-card form-card-spacious">
+            <h3 class="box-title">1 · DATOS PERSONALES, DOSIMETRÍA Y FOTO</h3>
+            <div class="input-grid-comfortable">
+              <div class="form-group">
+                <label for="mod-nombre">Nombre Completo</label>
+                <input type="text" id="mod-nombre" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-sexo">Sexo Biológico</label>
+                <select id="mod-sexo" class="console-input" onchange="toggleModifyHormonalVisibility()">
+                  <option value="F">♀ Femenino</option>
+                  <option value="M">♂ Masculino</option>
+                </select>
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="mod-rol">Rol Clínico / Especialidad</label>
+                <input type="text" id="mod-rol" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-rad-previa">Radiación Previa de Carrera (mSv)</label>
+                <input type="number" step="0.1" min="0" max="10000" id="mod-rad-previa" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-rad-mision">Radiación Acumulada Actual (mSv)</label>
+                <input type="number" step="0.01" min="0" max="10000" id="mod-rad-mision" class="console-input" required />
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="mod-avatar-select">Avatar Predefinido</label>
+                <select id="mod-avatar-select" class="console-input" onchange="onModifyPredefinedAvatarChange(this.value)">
+                  <option value="assets/avatars/astro_01.svg">Retrato Credencial 01 (Comandante)</option>
+                  <option value="assets/avatars/astro_02.svg">Retrato Credencial 02 (Oficial Médico)</option>
+                  <option value="assets/avatars/astro_03.svg">Retrato Credencial 03 (Ingeniero)</option>
+                  <option value="assets/avatars/astro_04.svg">Retrato Credencial 04 (Especialista)</option>
+                </select>
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="mod-avatar-file">Cambiar Foto de Perfil desde el Dispositivo (PNG, JPG, WEBP, SVG)</label>
+                <div class="custom-avatar-upload-row">
+                  <img id="mod-avatar-preview" class="upload-preview-thumb" src="assets/avatars/astro_01.svg" alt="Vista previa del astronauta" />
+                  <div class="custom-avatar-upload-controls">
+                    <input type="file" id="mod-avatar-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="console-input" onchange="onModifyAvatarFileSelected(event)" />
+                    <small id="mod-avatar-status" class="upload-status-note">Se conserva la foto actual salvo que elijas otra</small>
                   </div>
+                  <button type="button" class="action-btn btn-secondary" onclick="clearModifyCustomAvatar()">Restaurar Foto</button>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <h3 class="box-title" style="margin-top: 20px;">ÚLTIMO REGISTRO CLÍNICO Y SÍNTOMAS ACTUALES</h3>
-              <label class="checkbox-item eva-highlight" style="margin-bottom: 12px;">
-                <input type="checkbox" id="mod-update-sample-cb" checked onchange="document.getElementById('mod-sample-fields-wrap')?.classList.toggle('hidden', !this.checked)" />
-                <span>Actualizar también los valores clínicos actuales (signos vitales, sueño, dosis y ciclo)</span>
-              </label>
+          <!-- Seccion 2: Ultimo Registro Clinico -->
+          <div class="form-card form-card-spacious">
+            <h3 class="box-title">2 · ÚLTIMO REGISTRO CLÍNICO Y SÍNTOMAS ACTUALES</h3>
+            <label class="checkbox-item eva-highlight" style="margin-bottom: 18px;">
+              <input type="checkbox" id="mod-update-sample-cb" checked onchange="document.getElementById('mod-sample-fields-wrap')?.classList.toggle('hidden', !this.checked)" />
+              <span>Actualizar también los valores clínicos actuales (signos vitales, sueño, dosis y ciclo)</span>
+            </label>
 
-              <div id="mod-sample-fields-wrap">
-                <div class="input-grid-3">
+            <div id="mod-sample-fields-wrap" class="modify-subgroups">
+              <div class="modify-subgroup">
+                <h4 class="modify-subgroup-title">2A · Signos Vitales y Metabolismo</h4>
+                <div class="input-grid-comfortable">
                   <div class="form-group">
                     <label for="mod-s-dia">Día de Registro</label>
                     <input type="number" min="1" max="10000" id="mod-s-dia" class="console-input" />
                   </div>
                   <div class="form-group">
-                    <label for="mod-s-fc">FC (lpm)</label>
+                    <label for="mod-s-fc">Frecuencia Cardíaca (lpm)</label>
                     <input type="number" step="0.5" min="25" max="230" id="mod-s-fc" class="console-input" />
-                  </div>
-                  <div class="form-group">
-                    <label for="mod-s-spo2">SpO₂ (%)</label>
-                    <input type="number" step="0.1" min="40" max="100" id="mod-s-spo2" class="console-input" />
                   </div>
                   <div class="form-group">
                     <label for="mod-s-pasis">PA Sistólica (mmHg)</label>
@@ -997,7 +1069,11 @@
                     <input type="number" step="1" min="30" max="150" id="mod-s-padia" class="console-input" />
                   </div>
                   <div class="form-group">
-                    <label for="mod-s-temp">Temp (°C)</label>
+                    <label for="mod-s-spo2">Saturación SpO₂ (%)</label>
+                    <input type="number" step="0.1" min="40" max="100" id="mod-s-spo2" class="console-input" />
+                  </div>
+                  <div class="form-group">
+                    <label for="mod-s-temp">Temperatura (°C)</label>
                     <input type="number" step="0.1" min="30" max="43" id="mod-s-temp" class="console-input" />
                   </div>
                   <div class="form-group">
@@ -1008,166 +1084,186 @@
                     <label for="mod-s-peso">Peso Actual (kg)</label>
                     <input type="number" step="0.1" min="20" max="250" id="mod-s-peso" class="console-input" />
                   </div>
+                </div>
+              </div>
+
+              <div class="modify-subgroup">
+                <h4 class="modify-subgroup-title">2B · Neuro-Ocular (SANS), Sueño, Ejercicio y Descanso</h4>
+                <div class="input-grid-comfortable">
                   <div class="form-group">
-                    <label for="mod-s-vision">Visión Actual</label>
+                    <label for="mod-s-vision">Índice Visual Funcional</label>
                     <input type="number" step="0.01" min="0.05" max="2.5" id="mod-s-vision" class="console-input" />
                   </div>
                   <div class="form-group">
-                    <label for="mod-s-sueno">Sueño (h)</label>
+                    <label for="mod-s-sueno">Horas de Sueño (h)</label>
                     <input type="number" step="0.1" min="0" max="24" id="mod-s-sueno" class="console-input" />
                   </div>
                   <div class="form-group">
-                    <label for="mod-s-estres">Estrés (1–10)</label>
+                    <label for="mod-s-estres">Nivel de Estrés (1–10)</label>
                     <input type="number" min="1" max="10" id="mod-s-estres" class="console-input" />
                   </div>
                   <div class="form-group">
-                    <label for="mod-s-cefalea">Cefalea (0–10)</label>
+                    <label for="mod-s-cefalea">Dolor de Cabeza (0–10)</label>
                     <input type="number" min="0" max="10" id="mod-s-cefalea" class="console-input" />
                   </div>
                   <div class="form-group">
-                    <label for="mod-s-mareo">Mareo Vestibular (0–10)</label>
+                    <label for="mod-s-mareo">Mareo Vestibular / SMS (0–10)</label>
                     <input type="number" min="0" max="10" id="mod-s-mareo" class="console-input" />
                   </div>
                   <div class="form-group">
-                    <label for="mod-s-ejercicio">Ejercicio (min)</label>
+                    <label for="mod-s-ejercicio">Ejercicio Activo (min)</label>
                     <input type="number" min="0" max="600" id="mod-s-ejercicio" class="console-input" />
                   </div>
-                  <div class="form-group">
-                    <label for="mod-s-hidratacion">Hidratación (ml)</label>
+                  <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="mod-s-hidratacion">Hidratación Diaria (ml)</label>
                     <input type="number" step="50" min="0" max="10000" id="mod-s-hidratacion" class="console-input" />
                   </div>
                 </div>
 
-                <!-- Bloque hormonal femenino editable solo cuando sexo == F -->
-                <div id="mod-hormonal-box" class="hormonal-checkin-box hidden" style="margin-top: 14px;">
-                  <div class="hormonal-box-header">
-                    <strong>♀ CICLO HORMONAL Y SALUD FEMENINA</strong>
-                  </div>
-                  <div class="input-grid-2">
-                    <div class="form-group">
-                      <label for="mod-s-fase">Fase del Ciclo</label>
-                      <select id="mod-s-fase" class="console-input">
-                        <option value="0">0 — No Aplica</option>
-                        <option value="1">1 — Menstrual</option>
-                        <option value="2">2 — Folicular</option>
-                        <option value="3">3 — Ovulatoria</option>
-                        <option value="4">4 — Lútea</option>
-                        <option value="5">5 — Suprimido</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="mod-s-dia-ciclo">Día del Ciclo (0–60)</label>
-                      <input type="number" min="0" max="60" id="mod-s-dia-ciclo" class="console-input" value="0" />
-                    </div>
-                    <div class="form-group">
-                      <label for="mod-s-flujo">Flujo Menstrual (0–3)</label>
-                      <select id="mod-s-flujo" class="console-input">
-                        <option value="0">0 — Ninguno</option>
-                        <option value="1">1 — Leve</option>
-                        <option value="2">2 — Moderado</option>
-                        <option value="3">3 — Abundante</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="mod-s-colico">Cólico / Dismenorrea (0–10)</label>
-                      <input type="number" min="0" max="10" id="mod-s-colico" class="console-input" value="0" />
-                    </div>
-                  </div>
-                  <label class="checkbox-item fem-highlight" style="margin-top: 8px;">
-                    <input type="checkbox" id="mod-s-hierro" />
-                    <span>Suplemento de Hierro Activo</span>
+                <div class="eva-check-row" style="margin-top: 14px;">
+                  <label class="checkbox-item">
+                    <input type="checkbox" id="mod-s-descanso" />
+                    <span>Día de descanso programado (descarga muscular en este registro)</span>
                   </label>
                 </div>
               </div>
+
+              <!-- Bloque hormonal femenino editable solo cuando sexo == F -->
+              <div id="mod-hormonal-box" class="hormonal-checkin-box hidden" style="margin-top: 4px;">
+                <div class="hormonal-box-header">
+                  <strong>♀ CICLO HORMONAL Y SALUD FEMENINA</strong>
+                </div>
+                <div class="input-grid-comfortable">
+                  <div class="form-group">
+                    <label for="mod-s-fase">Fase del Ciclo</label>
+                    <select id="mod-s-fase" class="console-input">
+                      <option value="0">0 — No Aplica</option>
+                      <option value="1">1 — Menstrual (Días 1–5)</option>
+                      <option value="2">2 — Folicular (Días 6–13)</option>
+                      <option value="3">3 — Ovulatoria (Días 14–16)</option>
+                      <option value="4">4 — Lútea (Días 17–28)</option>
+                      <option value="5">5 — Suprimido (LARC / ACO)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="mod-s-dia-ciclo">Día del Ciclo (0–60)</label>
+                    <input type="number" min="0" max="60" id="mod-s-dia-ciclo" class="console-input" value="0" />
+                  </div>
+                  <div class="form-group">
+                    <label for="mod-s-flujo">Flujo Menstrual (0–3)</label>
+                    <select id="mod-s-flujo" class="console-input">
+                      <option value="0">0 — Ninguno</option>
+                      <option value="1">1 — Leve</option>
+                      <option value="2">2 — Moderado</option>
+                      <option value="3">3 — Abundante</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="mod-s-colico">Cólico / Dismenorrea (0–10)</label>
+                    <input type="number" min="0" max="10" id="mod-s-colico" class="console-input" value="0" />
+                  </div>
+                </div>
+                <label class="checkbox-item fem-highlight" style="margin-top: 12px;">
+                  <input type="checkbox" id="mod-s-hierro" />
+                  <span>Suplemento de Hierro Activo</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Seccion 3A: Referencia Basal Cardiorrespiratoria y Metabolica -->
+          <div class="form-card form-card-spacious">
+            <h3 class="box-title">3A · REFERENCIA BASAL VITAL Y METABÓLICA</h3>
+            <div class="input-grid-comfortable">
+              <div class="form-group">
+                <label for="mod-b-fc">FC Basal (lpm)</label>
+                <input type="number" step="0.5" min="30" max="200" id="mod-b-fc" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-pasis">PA Sistólica Basal (mmHg)</label>
+                <input type="number" step="1" min="60" max="220" id="mod-b-pasis" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-padia">PA Diastólica Basal (mmHg)</label>
+                <input type="number" step="1" min="35" max="140" id="mod-b-padia" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-spo2">SpO₂ Basal (%)</label>
+                <input type="number" step="0.1" min="70" max="100" id="mod-b-spo2" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-temp">Temp Basal (°C)</label>
+                <input type="number" step="0.1" min="34" max="40" id="mod-b-temp" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-glucosa">Glucosa Basal (mg/dL)</label>
+                <input type="number" step="1" min="40" max="300" id="mod-b-glucosa" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-peso">Peso Basal (kg)</label>
+                <input type="number" step="0.1" min="25" max="250" id="mod-b-peso" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-vision">Índice Visual Basal</label>
+                <input type="number" step="0.01" min="0.1" max="2.5" id="mod-b-vision" class="console-input" required />
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="mod-b-osea">Densidad Ósea Base (%)</label>
+                <input type="number" step="0.1" min="20" max="150" id="mod-b-osea" class="console-input" required />
+              </div>
+            </div>
+          </div>
+
+          <!-- Seccion 3B: Metas Conductuales, Nutricion, Ejercicio y Dosimetria -->
+          <div class="form-card form-card-spacious">
+            <h3 class="box-title">3B · METAS DE RUTINA, SUEÑO, EVA Y DOSIMETRÍA</h3>
+            <div class="input-grid-comfortable">
+              <div class="form-group">
+                <label for="mod-b-sueno">Meta de Sueño (h/día)</label>
+                <input type="number" step="0.1" min="1" max="16" id="mod-b-sueno" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-animo">Ánimo Base (1–10)</label>
+                <input type="number" min="1" max="10" id="mod-b-animo" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-estres">Estrés Base (1–10)</label>
+                <input type="number" min="1" max="10" id="mod-b-estres" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-cog">Reflejos Base (ms)</label>
+                <input type="number" step="1" min="80" max="2000" id="mod-b-cog" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-cal">Calorías Meta (kcal)</label>
+                <input type="number" step="50" min="500" max="8000" id="mod-b-cal" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-hid">Hidratación Meta (ml)</label>
+                <input type="number" step="50" min="500" max="8000" id="mod-b-hid" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-apetito">Apetito Base (1–5)</label>
+                <input type="number" min="1" max="5" id="mod-b-apetito" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-ej">Ejercicio Meta (min)</label>
+                <input type="number" step="5" min="0" max="600" id="mod-b-ej" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-pre">Pre-Resp O₂ Meta (min)</label>
+                <input type="number" step="5" min="0" max="600" id="mod-b-pre" class="console-input" required />
+              </div>
+              <div class="form-group">
+                <label for="mod-b-dosis">Dosis Diaria Nominal (mSv)</label>
+                <input type="number" step="0.01" min="0" max="100" id="mod-b-dosis" class="console-input" required />
+              </div>
             </div>
 
-            <!-- Columna 2: Valores Basales Completos -->
-            <div class="form-card">
-              <h3 class="box-title">PARÁMETROS DE REFERENCIA BASAL PERSONAL</h3>
-              <div class="input-grid-3">
-                <div class="form-group">
-                  <label for="mod-b-fc">FC Basal (lpm)</label>
-                  <input type="number" step="0.5" min="30" max="200" id="mod-b-fc" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-pasis">PA Sistólica Basal (mmHg)</label>
-                  <input type="number" step="1" min="60" max="220" id="mod-b-pasis" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-padia">PA Diastólica Basal (mmHg)</label>
-                  <input type="number" step="1" min="35" max="140" id="mod-b-padia" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-spo2">SpO₂ Basal (%)</label>
-                  <input type="number" step="0.1" min="70" max="100" id="mod-b-spo2" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-temp">Temp Basal (°C)</label>
-                  <input type="number" step="0.1" min="34" max="40" id="mod-b-temp" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-glucosa">Glucosa Basal (mg/dL)</label>
-                  <input type="number" step="1" min="40" max="300" id="mod-b-glucosa" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-peso">Peso Basal (kg)</label>
-                  <input type="number" step="0.1" min="25" max="250" id="mod-b-peso" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-sueno">Meta de Sueño (h/día)</label>
-                  <input type="number" step="0.1" min="1" max="16" id="mod-b-sueno" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-animo">Ánimo Base (1–10)</label>
-                  <input type="number" min="1" max="10" id="mod-b-animo" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-estres">Estrés Base (1–10)</label>
-                  <input type="number" min="1" max="10" id="mod-b-estres" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-cog">Reflejos Base (ms)</label>
-                  <input type="number" step="1" min="80" max="2000" id="mod-b-cog" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-cal">Calorías Meta (kcal)</label>
-                  <input type="number" step="50" min="500" max="8000" id="mod-b-cal" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-hid">Hidratación Meta (ml)</label>
-                  <input type="number" step="50" min="500" max="8000" id="mod-b-hid" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-apetito">Apetito Base (1–5)</label>
-                  <input type="number" min="1" max="5" id="mod-b-apetito" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-ej">Ejercicio Meta (min)</label>
-                  <input type="number" step="5" min="0" max="600" id="mod-b-ej" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-pre">Pre-Resp O₂ Meta (min)</label>
-                  <input type="number" step="5" min="0" max="600" id="mod-b-pre" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-vision">Visión Basal</label>
-                  <input type="number" step="0.01" min="0.1" max="2.5" id="mod-b-vision" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-osea">Densidad Ósea Base (%)</label>
-                  <input type="number" step="0.1" min="20" max="150" id="mod-b-osea" class="console-input" required />
-                </div>
-                <div class="form-group">
-                  <label for="mod-b-dosis">Dosis Diaria Nominal (mSv)</label>
-                  <input type="number" step="0.01" min="0" max="100" id="mod-b-dosis" class="console-input" required />
-                </div>
-              </div>
-
-              <div class="form-submit-bar" style="margin-top: 24px;">
-                <button type="submit" class="action-btn btn-primary btn-large">
-                  💾 Guardar Cambios del Astronauta
-                </button>
-              </div>
+            <div class="form-submit-bar" style="margin-top: 24px;">
+              <button type="submit" class="action-btn btn-primary btn-large">
+                ✓ Guardar Cambios del Astronauta
+              </button>
             </div>
           </div>
         </form>

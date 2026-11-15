@@ -145,6 +145,7 @@ typedef struct {
     int          dolor_cabeza;     /* 0-10 */
     int          mareo_vestibular; /* 0-10 */
     int          ejercicio_min;    /* min/dia */
+    int          dia_descanso;     /* 0/1 Dia de descanso programado (descarga muscular) */
     int          tuvo_eva;         /* 0/1 */
     int          pre_resp_o2_min;  /* min pre-respiracion O2 */
     unsigned int sintomas_flags;   /* Bitmask SymptomFlags */

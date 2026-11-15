@@ -33,28 +33,29 @@ let avatarCacheBust = 0;
 
 /* Parte o segmento corporal seleccionado en el Mapa Corporal */
 let selectedBodyPartKey = null;
+let crewDetailsMap = {};
 
-/* Guias breves de actuacion para contramedidas aplicadas */
+/* Guias breves e inmediatamente accionables para contramedidas aplicadas */
 const COUNTERMEASURE_GUIDANCE = [
   {
     mask: 32,
     title: "Banda de Compresión en Muslos",
-    howToAct: "Colocar ambas bandas en el tercio superior del muslo en bloques diurnos para retener fluidos en piernas, aliviar presión intracraneal/SANS y vigilar sensibilidad o edema distal."
+    howToAct: "1) Ajustar en tercio superior de ambos muslos por 2–4 h diurnas. 2) Vigilar temperatura y pulso distal. 3) Retirar al dormir o ante hormigueo."
   },
   {
     mask: 64,
     title: "Suplementación Complejo B",
-    howToAct: "Administrar 1 comprimido oral diario junto con alimento sólido y agua para reforzar el metabolismo neuro-ocular, la síntesis hematopoyética y el equilibrio nervioso."
+    howToAct: "1) Tomar 1 comprimido diario con comida sólida y 250 ml de agua. 2) Priorizar ante baja visual SANS, cefalea o uso de hierro."
   },
   {
     mask: 128,
     title: "Suplemento de Vitamina D3",
-    howToAct: "Administrar la dosis diaria tras una comida principal acompañada de hidratación y combinar con la rutina diaria de carga mecánica ósea."
+    howToAct: "1) Tomar 1 dosis diaria junto a la comida principal. 2) Combinar hoy con carga ósea en ARED / CEVIS o protocolo Zero-T2."
   },
   {
     mask: 256,
-    title: "Dieta Vegetal Fresca",
-    howToAct: "Incorporar raciones frescas cultivadas a bordo en la ingesta del día, priorizando alimentos ricos en antioxidantes y fibra junto con refuerzo hídrico."
+    title: "Dieta Vegetal Fresca (Veggie)",
+    howToAct: "1) Sumar 1 porción fresca del cultivo Veggie en el menú de hoy. 2) Acompañar con hidratación para optimizar antioxidantes y fibra."
   }
 ];
 
@@ -319,7 +320,23 @@ async function refreshMissionState(initialLoad = false) {
       allCrewList = currentMissionData.crew || [];
     }
 
+    const detailResults = await Promise.allSettled(
+      allCrewList.map(async (c) => {
+        const r = await fetch(`/api/astronauts/${encodeURIComponent(c.id)}`);
+        if (!r.ok) return null;
+        return await r.json();
+      })
+    );
+    const nextMap = {};
+    detailResults.forEach((res) => {
+      if (res.status === "fulfilled" && res.value && res.value.id) {
+        nextMap[res.value.id] = res.value;
+      }
+    });
+    crewDetailsMap = nextMap;
+
     updateUrgentStatus(allCrewList);
+    renderCrewRoutineNudges();
     updateMostrarLayoutVisibility();
     renderCrewGrid(allCrewList);
     renderPromedioView(currentMissionData, allCrewList, initialLoad);
@@ -438,6 +455,288 @@ function updateMostrarLayoutVisibility() {
   const crewGrid = document.getElementById("crew-grid");
   if (crewGrid) {
     crewGrid.classList.toggle("hidden", hasDetail);
+  }
+
+  const nudgesPanel = document.getElementById("crew-routine-nudges");
+  if (nudgesPanel) {
+    const hasContent = nudgesPanel.dataset.hasNudges === "1";
+    nudgesPanel.classList.toggle("hidden", !isMostrar || hasDetail || !hasContent);
+  }
+}
+
+/* =========================================================================
+ * Recordatorios Proactivos de Rutina de Mision (Ejercicio, Dieta, Agua, Descanso)
+ * ========================================================================= */
+function computeAstronautRoutineNudges(astro) {
+  if (!astro) return [];
+  const hist = astro.history || [];
+  const latest = hist.length > 0 ? hist[hist.length - 1] : null;
+  if (!latest) return [];
+
+  const b = astro.baseline || {};
+  const isFem = (astro.sexo || "M").toUpperCase() === "F";
+  const flags = latest.sintomas_flags || 0;
+  const nudges = [];
+
+  /* 1. Racha sin dia de descanso programado (>= 6 dias activos seguidos) */
+  const recent7 = hist.slice(-7);
+  const restIn7 = recent7.filter((s) => s.dia_descanso === 1).length;
+  let consecutiveActive = 0;
+  for (let i = hist.length - 1; i >= 0; i--) {
+    if (hist[i].dia_descanso === 1) break;
+    consecutiveActive++;
+  }
+  if (latest.dia_descanso !== 1 && consecutiveActive >= 6 && restIn7 === 0) {
+    nudges.push({
+      id: "rest_day",
+      astroId: astro.id,
+      astroName: astro.nombre,
+      kind: "rest",
+      title: `Programar día de descanso (${consecutiveActive} días activos seguidos)`,
+      desc: "Puedes registrar un día de descanso programado para descarga muscular (hasta 1–2/sem sin penalizar el promedio de 7 días).",
+      actionType: "mark_rest",
+      actionLabel: "Marcar Descanso Hoy"
+    });
+  }
+
+  /* 2. Ejercicio pendiente del dia (si no es dia de descanso) */
+  const ejTarget = b.ejercicio_objetivo_min || 90;
+  if (latest.dia_descanso !== 1 && (latest.ejercicio_min || 0) < ejTarget) {
+    const missingEj = Math.max(5, ejTarget - (latest.ejercicio_min || 0));
+    nudges.push({
+      id: "exercise",
+      astroId: astro.id,
+      astroName: astro.nombre,
+      kind: "routine",
+      title: `Completar ${missingEj} min de ejercicio diario (${latest.ejercicio_min || 0}/${ejTarget} min)`,
+      desc: "Protocolo diario ARED / CEVIS / Zero-T2 para proteger densidad ósea y masa muscular.",
+      actionType: "goto_checkin",
+      actionLabel: "Actualizar en Check-In"
+    });
+  }
+
+  /* 3. Hidratacion diaria pendiente */
+  const hidTarget = b.hidratacion_objetivo_ml || 2500;
+  if ((latest.hidratacion_ml || 0) < Math.round(hidTarget * 0.9)) {
+    const missingMl = Math.max(100, hidTarget - (latest.hidratacion_ml || 0));
+    nudges.push({
+      id: "hydration",
+      astroId: astro.id,
+      astroName: astro.nombre,
+      kind: "routine",
+      title: `Beber +${missingMl} ml de agua hoy (${latest.hidratacion_ml || 0}/${hidTarget} ml)`,
+      desc: "Sostener volemia plasmática y prevenir estasis venosa o fatiga por deshidratación.",
+      actionType: "add_water",
+      actionLabel: "+350 ml Ahora"
+    });
+  }
+
+  /* 4. Dieta Vegetal Fresca (Veggie) */
+  if ((flags & 256) === 0) {
+    nudges.push({
+      id: "veggie",
+      astroId: astro.id,
+      astroName: astro.nombre,
+      kind: "routine",
+      title: "Incluir porción fresca de cultivo Veggie en la dieta de hoy",
+      desc: "Aporta antioxidantes, folato y variedad nutricional frente a fatiga de menú en órbita.",
+      actionType: "mark_flag_256",
+      actionLabel: "Registrar Veggie"
+    });
+  }
+
+  /* 5. Micronutrientes: Vitamina D3 y Hierro femenino en menstruacion */
+  if ((flags & 128) === 0) {
+    nudges.push({
+      id: "vitd",
+      astroId: astro.id,
+      astroName: astro.nombre,
+      kind: "routine",
+      title: "Registrar toma diaria de Vitamina D3",
+      desc: "Cofactor indispensable para absorción de calcio y salud ósea sin exposición solar.",
+      actionType: "mark_flag_128",
+      actionLabel: "Registrar Vit. D3"
+    });
+  }
+
+  if (isFem && (latest.fase_ciclo === 1 || (latest.flujo_menstrual || 0) >= 1) && latest.suplemento_hierro !== 1) {
+    nudges.push({
+      id: "iron",
+      astroId: astro.id,
+      astroName: astro.nombre,
+      kind: "routine",
+      title: "Tomar suplemento de Hierro (Fe) + Complejo B",
+      desc: "Compensa pérdida menstrual y hemólisis espacial para prevenir ferropenia.",
+      actionType: "mark_iron",
+      actionLabel: "Registrar Hierro + Agua"
+    });
+  }
+
+  return nudges;
+}
+
+function buildNudgeHtml(n, showAstroName = true) {
+  const namePrefix = showAstroName ? `<span class="mono-tag" style="margin-right:6px;">${escapeHtml(n.astroName)}</span>` : "";
+  return `<div class="routine-nudge-item ${n.kind === "rest" ? "nudge-rest" : ""}">
+    <div class="routine-nudge-copy">
+      <strong>${namePrefix}${escapeHtml(n.title)}</strong>
+      <small>${escapeHtml(n.desc)}</small>
+    </div>
+    <div class="routine-nudge-actions">
+      <button type="button" class="action-btn btn-secondary" onclick="applyRoutineQuickAction('${escapeAttr(n.astroId)}', '${escapeAttr(n.actionType)}')">
+        ${escapeHtml(n.actionLabel)}
+      </button>
+    </div>
+  </div>`;
+}
+
+function renderCrewRoutineNudges() {
+  const container = document.getElementById("crew-routine-nudges");
+  if (!container) return;
+
+  const nudges = [];
+  allCrewList.forEach((c) => {
+    const full = crewDetailsMap[c.id];
+    if (!full) return;
+    const list = computeAstronautRoutineNudges(full);
+    /* Mostrar hasta 2 prioridades por tripulante para mantener claridad operativa */
+    list.slice(0, 2).forEach((n) => nudges.push(n));
+  });
+
+  if (nudges.length === 0) {
+    container.dataset.hasNudges = "0";
+    container.innerHTML = "";
+    container.classList.add("hidden");
+    return;
+  }
+
+  const shown = nudges.slice(0, 5);
+  container.dataset.hasNudges = "1";
+  container.innerHTML = `
+    <div class="routine-nudges-header">
+      <span class="routine-nudges-title">RUTINA OPERATIVA DE MISIÓN · RECORDATORIOS ACTIVOS (${nudges.length})</span>
+      <span class="routine-nudges-sub">Acciones preventivas pendientes antes del cierre de jornada</span>
+    </div>
+    <div class="routine-nudges-list">
+      ${shown.map((n) => buildNudgeHtml(n, true)).join("")}
+    </div>
+  `;
+}
+
+function renderDetailRoutineNudges(astro) {
+  const container = document.getElementById("detail-routine-nudges");
+  if (!container) return;
+  const nudges = computeAstronautRoutineNudges(astro);
+  if (nudges.length === 0) {
+    container.innerHTML = "";
+    container.classList.add("hidden");
+    return;
+  }
+  container.classList.remove("hidden");
+  container.innerHTML = `
+    <div class="routine-nudges-panel routine-nudges-compact">
+      <div class="routine-nudges-header">
+        <span class="routine-nudges-title">RUTINA PENDIENTE DEL TRIPULANTE (${nudges.length})</span>
+      </div>
+      <div class="routine-nudges-list">
+        ${nudges.slice(0, 3).map((n) => buildNudgeHtml(n, false)).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderCheckinRoutineNudges(astroId) {
+  const container = document.getElementById("ci-routine-nudges");
+  if (!container) return;
+  const astro = crewDetailsMap[astroId];
+  const nudges = computeAstronautRoutineNudges(astro);
+  if (nudges.length === 0) {
+    container.innerHTML = "";
+    container.classList.add("hidden");
+    return;
+  }
+  container.classList.remove("hidden");
+  container.innerHTML = `
+    <div class="routine-nudges-header">
+      <span class="routine-nudges-title">RECORDATORIOS DE RUTINA PARA ESTE CHECK-IN (${nudges.length})</span>
+      <span class="routine-nudges-sub">Sugerencias preventivas según historial reciente</span>
+    </div>
+    <div class="routine-nudges-list">
+      ${nudges.map((n) => buildNudgeHtml(n, false)).join("")}
+    </div>
+  `;
+}
+
+function openCheckinForAstronaut(astroId) {
+  switchOptionView("checkin");
+  const sel = document.getElementById("ci-astronaut");
+  if (sel && astroId) {
+    sel.value = astroId;
+    prefillCheckinFromAstronaut(astroId);
+  }
+}
+
+async function applyRoutineQuickAction(astroId, actionType) {
+  if (!astroId) return;
+  if (actionType === "goto_checkin") {
+    openCheckinForAstronaut(astroId);
+    return;
+  }
+
+  let astro = crewDetailsMap[astroId];
+  if (!astro) {
+    try {
+      const r = await fetch(`/api/astronauts/${encodeURIComponent(astroId)}`);
+      if (r.ok) astro = await r.json();
+    } catch (_) {}
+  }
+  if (!astro) return;
+
+  const hist = astro.history || [];
+  const latest = hist.length > 0 ? hist[hist.length - 1] : null;
+  const targetDay = latest ? latest.dia_mision : currentMissionData?.dia_actual || 14;
+  const currentFlags = latest ? latest.sintomas_flags || 0 : 0;
+  let patch = { dia_mision: targetDay };
+  let msg = "Rutina actualizada.";
+
+  if (actionType === "mark_rest") {
+    patch.dia_descanso = 1;
+    patch.ejercicio_min = 0;
+    msg = `Día de descanso programado registrado para ${astro.nombre}.`;
+  } else if (actionType === "add_water") {
+    patch.hidratacion_ml = Math.min(10000, (latest?.hidratacion_ml || 0) + 350);
+    msg = `+350 ml de hidratación registrados para ${astro.nombre}.`;
+  } else if (actionType === "mark_flag_256") {
+    patch.sintomas_flags = currentFlags | 256;
+    msg = `Dieta Vegetal Fresca (Veggie) registrada para ${astro.nombre}.`;
+  } else if (actionType === "mark_flag_128") {
+    patch.sintomas_flags = currentFlags | 128;
+    msg = `Vitamina D3 registrada para ${astro.nombre}.`;
+  } else if (actionType === "mark_iron") {
+    patch.suplemento_hierro = 1;
+    patch.sintomas_flags = currentFlags | 64;
+    patch.hidratacion_ml = Math.max(latest?.hidratacion_ml || 0, astro.baseline?.hidratacion_objetivo_ml || 2500);
+    msg = `Hierro + Complejo B e hidratación registrados para ${astro.nombre}.`;
+  }
+
+  try {
+    const res = await fetch(`/api/astronauts/${encodeURIComponent(astroId)}/samples`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch)
+    });
+    if (res.ok) {
+      showToast(msg);
+      await refreshMissionState(true);
+      if (activeOptionView === "checkin") {
+        prefillCheckinFromAstronaut(astroId);
+      }
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast(err.error || "No se pudo actualizar la rutina", true);
+    }
+  } catch (err) {
+    showToast("Error de red al actualizar rutina", true);
   }
 }
 
@@ -718,6 +1017,7 @@ function getMinimalistOrganIconSvg(kind) {
 
 function extractActiveBodySymptoms(a, latest, rep) {
   const symptoms = [];
+  const hist = Array.isArray(a?.history) ? a.history : [];
   const flags = latest ? latest.sintomas_flags || 0 : 0;
   const sysStatus = rep.system_status || [0, 0, 0, 0, 0, 0, 0];
   const b = a.baseline || {};
@@ -767,27 +1067,38 @@ function extractActiveBodySymptoms(a, latest, rep) {
       );
     }
 
-    /* 3. Mareo Ortostático / Vestibular (bit 16) */
-    if ((flags & 16) !== 0) {
+    /* 3. Mareo Ortostático (bit 16) o Vestibular / SMS (mareo_vestibular >= 5) */
+    const mareoVal = latest.mareo_vestibular || 0;
+    if ((flags & 16) !== 0 || mareoVal >= 5 || (sysStatus[1] > 0 && mareoVal >= 4)) {
       pushSym(
         "vestibular",
-        "Mareo Ortostático / Vértigo Vestibular",
-        "Desorientación neurovestibular activa · Indicar bandas en muslos e hidratación",
+        mareoVal >= 5 ? "Mareo Espacial / Vértigo Vestibular (SMS)" : "Mareo Ortostático / Inestabilidad Vestibular",
+        mareoVal >= 5
+          ? `Mareo vestibular ${mareoVal}/10 · Diferir EVA y pilotaje manual`
+          : "Desorientación neurovestibular / ortostática · Indicar hidratación y prendas compresivas",
         "ear",
         1,
         "sym-overlay-vestibular",
-        2
+        (flags & 16) !== 0 || mareoVal >= 5 ? 2 : 1
       );
     }
 
-    /* 4. Sueño / Estrés / Fatiga Cognitiva */
-    const cogDelta = (latest.cognitivo_ms || 260) - (b.cognitivo_base_ms || 260);
-    if (latest.sueno_horas < 6.0 || latest.estres >= 7 || cogDelta >= 60 || latest.cohesion_equipo <= 2 || sysStatus[5] > 0) {
-      const sev = latest.sueno_horas < 5.0 || latest.estres >= 8 || sysStatus[5] >= 2 ? 2 : 1;
+    /* 4. Sueño 3d / Estrés / Fatiga Cognitiva (+15%) / Apetito Nutricional (SYS_BEHAVIORAL = 5) */
+    const recent3 = hist.slice(-3);
+    const sleep3d = recent3.length > 0
+      ? recent3.reduce((acc, s) => acc + (s.sueno_horas || 0), 0) / recent3.length
+      : (latest.sueno_horas || 7.5);
+    const cogRatio = (latest.cognitivo_ms || 260) / (b.cognitivo_base_ms || 260);
+    const lowAppetite = (latest.apetito_comida ?? 4) <= 2;
+    if (sleep3d < 6.0 || latest.estres >= 7 || cogRatio > 1.15 || latest.cohesion_equipo <= 2 || lowAppetite || sysStatus[5] > 0) {
+      const sev = (sleep3d < 5.0 && latest.estres >= 8) || sysStatus[5] >= 2 ? 2 : 1;
+      const behTitle = lowAppetite && sleep3d >= 6.0 && latest.estres < 7 && cogRatio <= 1.15
+        ? "Fatiga de Menú / Déficit Nutricional"
+        : "Fatiga Conductual / Privación de Sueño";
       pushSym(
         "sleep",
-        "Fatiga Conductual / Privación de Sueño",
-        `Sueño ${latest.sueno_horas.toFixed(1)} h · Estrés ${latest.estres}/10 · Reflejos ${latest.cognitivo_ms.toFixed(0)} ms`,
+        behTitle,
+        `Sueño 3d ${sleep3d.toFixed(1)} h · Estrés ${latest.estres}/10 · Reflejos ${latest.cognitivo_ms.toFixed(0)} ms · Apetito ${latest.apetito_comida}/5`,
         "brain",
         5,
         "sym-overlay-sleep",
@@ -796,33 +1107,34 @@ function extractActiveBodySymptoms(a, latest, rep) {
     }
 
     /* 5. Respiratorio / Hipoxia / O2-CO2 */
-    if (latest.spo2 < 95.0 || sysStatus[2] > 0) {
+    if (latest.spo2 < 94.0 || sysStatus[2] > 0) {
       pushSym(
         "respiratory",
-        latest.spo2 < 92.0 ? "Hipoxia / Disnea Respiratoria" : "Desaturación Respiratoria Leve",
+        latest.spo2 < 90.0 ? "Hipoxia Crítica / Disnea Respiratoria" : "Desaturación Respiratoria / Alerta ECLSS",
         `SpO₂ ${latest.spo2.toFixed(1)}% (base ${(b.spo2_base || 98).toFixed(1)}%)`,
         "lungs",
         2,
         "sym-overlay-respiratory",
-        latest.spo2 < 92.0 || sysStatus[2] >= 2 ? 2 : 1
+        latest.spo2 < 90.0 || sysStatus[2] >= 2 ? 2 : 1
       );
     }
 
-    /* 6. Cardiovascular (FC / PA / Hidratacion) */
-    const fcDelta = Math.abs((latest.fc || 70) - (b.fc_base || 70));
-    if (latest.fc >= 100 || latest.fc <= 48 || latest.pa_sis >= 145 || latest.pa_sis <= 90 || fcDelta >= 25 || sysStatus[0] > 0) {
+    /* 6. Cardiovascular (FC / PA / Hidratacion) — sincronizado con Regla 5 backend */
+    const fcDiff = (latest.fc || 70) - (b.fc_base || 70);
+    if (latest.fc > 105 || latest.fc < 45 || latest.pa_sis > 140 || latest.pa_sis < 90 || fcDiff > 25 || sysStatus[0] > 0) {
+      const cardioCrit = latest.pa_sis < 85 || latest.fc > 130 || sysStatus[0] >= 2;
       pushSym(
         "cardio",
-        latest.fc >= 100 || fcDelta >= 25 ? "Taquicardia / Sobrecarga Cardíaca" : "Alteración Hemodinámica",
+        latest.fc > 105 || fcDiff > 25 ? "Taquicardia / Sobrecarga Cardíaca" : "Alteración Hemodinámica / Estasis Venosa",
         `FC ${latest.fc.toFixed(0)} lpm · PA ${latest.pa_sis.toFixed(0)}/${latest.pa_dia.toFixed(0)} mmHg`,
         "heart",
         0,
         "sym-overlay-cardio",
-        latest.fc >= 120 || latest.pa_sis >= 160 || latest.pa_sis <= 85 || sysStatus[0] >= 2 ? 2 : 1
+        cardioCrit ? 2 : 1
       );
     }
 
-    /* 7. Dolor Articular Post-EVA (bit 8) y Musculoesquelético */
+    /* 7. Dolor Articular Post-EVA (bit 8) y Musculoesquelético (respetando dia_descanso) */
     if ((flags & 8) !== 0) {
       pushSym(
         "joints",
@@ -833,7 +1145,7 @@ function extractActiveBodySymptoms(a, latest, rep) {
         "sym-overlay-joints",
         2
       );
-    } else if (latest.ejercicio_min < Math.round((b.ejercicio_objetivo_min || 90) * 0.6) || sysStatus[3] > 0) {
+    } else if ((latest.dia_descanso !== 1 && latest.ejercicio_min < Math.round((b.ejercicio_objetivo_min || 90) * 0.6)) || sysStatus[3] > 0) {
       pushSym(
         "bone",
         "Déficit Osteomuscular",
@@ -858,19 +1170,17 @@ function extractActiveBodySymptoms(a, latest, rep) {
       );
     }
 
-    /* 9. Infeccion / Fiebre / Reactivacion Viral / Glucemia (bits 2, 4, temp, glucosa, apetito) */
+    /* 9. Infeccion / Fiebre (>= 37.8 C) / Reactivacion Viral / Glucemia (SYS_IMMUNE = 4) */
     const hasInfection = (flags & 4) !== 0;
     const hasViral = (flags & 2) !== 0;
-    const fever = latest.temp_c >= 37.6 || latest.temp_c <= 35.5;
-    const glucAbn = latest.glucosa_mg_dl >= 145 || latest.glucosa_mg_dl <= 68;
-    const lowAppetite = latest.apetito_comida <= 2;
-    if (hasInfection || hasViral || fever || glucAbn || lowAppetite || sysStatus[4] > 0) {
+    const fever = latest.temp_c >= 37.8 || latest.temp_c <= 35.0;
+    const glucAbn = latest.glucosa_mg_dl > 140 || latest.glucosa_mg_dl < 70;
+    if (hasInfection || hasViral || fever || glucAbn || sysStatus[4] > 0) {
       const parts = [];
       if (hasInfection) parts.push("Signos de infección");
       if (hasViral) parts.push("Reactivación viral");
       if (fever) parts.push(`Temp ${latest.temp_c.toFixed(1)} °C`);
       if (glucAbn) parts.push(`Glucemia ${latest.glucosa_mg_dl.toFixed(0)} mg/dL`);
-      if (lowAppetite) parts.push(`Apetito ${latest.apetito_comida}/5`);
       pushSym(
         "immune",
         hasInfection || fever ? "Respuesta Inmune / Estado Febril" : "Alteración Metabólica / Viral",
@@ -878,20 +1188,26 @@ function extractActiveBodySymptoms(a, latest, rep) {
         "stomach",
         4,
         "sym-overlay-immune",
-        hasInfection || latest.temp_c >= 38.3 || sysStatus[4] >= 2 ? 2 : 1
+        latest.temp_c >= 39.0 || (fever && (hasInfection || hasViral || glucAbn)) || latest.glucosa_mg_dl < 55 || latest.glucosa_mg_dl > 200 || sysStatus[4] >= 2 ? 2 : 1
       );
     }
 
-    /* 10. Salud Hormonal Femenina / Cólico Pélvico */
-    if (isFem && ((latest.colico_menstrual || 0) >= 4 || (latest.flujo_menstrual || 0) >= 3)) {
+    /* 10. Salud Hormonal Femenina / Menstruacion y Colico Pelvico */
+    if (isFem && (
+      latest.fase_ciclo === 1 ||
+      (latest.flujo_menstrual || 0) >= 2 ||
+      ((latest.flujo_menstrual || 0) >= 1 && (latest.suplemento_hierro || 0) === 0) ||
+      (latest.colico_menstrual || 0) >= 4
+    )) {
+      const critPelvic = (latest.colico_menstrual || 0) >= 8 || ((latest.flujo_menstrual || 0) === 3 && ((flags & 16) !== 0 || latest.pa_sis < 95));
       pushSym(
         "pelvic",
-        "Cólico Menstrual / Dolor Pélvico",
-        `Dismenorrea ${latest.colico_menstrual || 0}/10 · Flujo nivel ${latest.flujo_menstrual || 0}/3`,
+        critPelvic ? "Menorragia / Dismenorrea Severa" : "Monitoreo Menstrual / Balance de Hierro",
+        `Dismenorrea ${latest.colico_menstrual || 0}/10 · Flujo nivel ${latest.flujo_menstrual || 0}/3 · Hierro ${latest.suplemento_hierro ? "Activo" : "Pendiente"}`,
         "pelvis",
-        4,
+        critPelvic ? 0 : 4,
         "sym-overlay-pelvic",
-        (latest.colico_menstrual || 0) >= 7 || (latest.flujo_menstrual || 0) >= 3 ? 2 : 1
+        critPelvic ? 2 : 1
       );
     }
   }
@@ -912,7 +1228,7 @@ function extractActiveBodySymptoms(a, latest, rep) {
   /* Respaldo desde alertas generadas por el motor si ningun campo disparo */
   if (symptoms.length === 0 && Array.isArray(rep.alerts)) {
     rep.alerts.forEach((al, idx) => {
-      const msg = `${al.title || ""} ${al.explanation || ""}`.toLowerCase();
+      const msg = `${al.titulo || al.title || ""} ${al.explicacion || al.explanation || ""}`.toLowerCase();
       let organ = "heart";
       let sysIdx = 0;
       let overlayId = "sym-overlay-cardio";
@@ -1629,18 +1945,20 @@ function renderAstronautDetailPanel(a) {
   setChip("cm-btn-vitd", 128);
   setChip("cm-btn-veggie", 256);
 
+  renderDetailRoutineNudges(a);
+
   const cmSummaryList = document.getElementById("cm-action-summary-list");
   if (cmSummaryList) {
     const appliedCm = COUNTERMEASURE_GUIDANCE.filter((g) => (flags & g.mask) !== 0);
     if (appliedCm.length === 0) {
       cmSummaryList.innerHTML = `<div class="cm-summary-empty">
-        Activa cualquiera de las contramedidas superiores para ver aquí el resumen breve de cómo actuar.
+        Activa cualquiera de las contramedidas superiores para ver aquí la instrucción exacta de ejecución.
       </div>`;
     } else {
       cmSummaryList.innerHTML = appliedCm
         .map(
           (g) => `<div class="cm-summary-item">
-            <strong>✓ ${escapeHtml(g.title)}</strong>
+            <strong>PASO ACTIVO · ${escapeHtml(g.title)}</strong>
             <span>${escapeHtml(g.howToAct)}</span>
           </div>`
         )
@@ -1682,7 +2000,7 @@ function renderAstronautDetailPanel(a) {
         if (femSummary) {
           femSummary.classList.toggle("hidden", !ironActive);
           femSummary.innerHTML = ironActive
-            ? `<strong>✓ Cómo actuar (Hierro + Hidratación):</strong><span>Administrar hierro + ácido fólico/Complejo B con agua abundante (+350 ml), vigilar signos de mareo ortostático y reevaluar intensidad del flujo en el siguiente control.</span>`
+            ? `<strong>PROTOCOLO ACTIVO · Hierro + Hidratación (+350 ml)</strong><span>1) Tomar 1 dosis de hierro elemental + folato/Complejo B con 350 ml de agua (evitar café/té 1 h). 2) Vigilar mareo ortostático y reevaluar intensidad del flujo en el próximo check-in.</span>`
             : "";
         }
       } else {
@@ -2130,6 +2448,8 @@ async function loadAstronautForModify(astronautId) {
     setV("mod-s-mareo", latest ? latest.mareo_vestibular : 0);
     setV("mod-s-ejercicio", latest ? latest.ejercicio_min : (b.ejercicio_objetivo_min ?? 90));
     setV("mod-s-hidratacion", latest ? latest.hidratacion_ml : (b.hidratacion_objetivo_ml ?? 2500));
+    const modDescCb = document.getElementById("mod-s-descanso");
+    if (modDescCb) modDescCb.checked = latest ? (latest.dia_descanso === 1) : false;
 
     setV("mod-s-fase", latest ? (latest.fase_ciclo ?? 0) : 0);
     setV("mod-s-dia-ciclo", latest ? (latest.dia_ciclo ?? 0) : 0);
@@ -2227,6 +2547,7 @@ async function submitModifyAstronaut(ev) {
         dolor_cabeza: parseInt(document.getElementById("mod-s-cefalea").value, 10),
         mareo_vestibular: parseInt(document.getElementById("mod-s-mareo").value, 10),
         ejercicio_min: parseInt(document.getElementById("mod-s-ejercicio").value, 10),
+        dia_descanso: document.getElementById("mod-s-descanso")?.checked ? 1 : 0,
         hidratacion_ml: parseInt(document.getElementById("mod-s-hidratacion").value, 10),
         fase_ciclo: isFem ? (parseInt(document.getElementById("mod-s-fase").value, 10) || 0) : 0,
         dia_ciclo: isFem ? (parseInt(document.getElementById("mod-s-dia-ciclo").value, 10) || 0) : 0,
@@ -2459,6 +2780,7 @@ async function prefillCheckinFromAstronaut(astronautId) {
     const res = await fetch(`/api/astronauts/${encodeURIComponent(astronautId)}`);
     if (!res.ok) return;
     const a = await res.json();
+    crewDetailsMap[astronautId] = a;
     const sel = document.getElementById("ci-astronaut");
     if (reqSeq !== prefillRequestSeq || (sel && sel.value && sel.value !== astronautId)) {
       return;
@@ -2466,6 +2788,8 @@ async function prefillCheckinFromAstronaut(astronautId) {
     const hist = a.history || [];
     const latest = hist.length > 0 ? hist[hist.length - 1] : null;
     const isFem = (a.sexo || "M").toUpperCase() === "F";
+
+    renderCheckinRoutineNudges(astronautId);
 
     /* Mostrar/ocultar bloque hormonal femenino ANTES de verificar muestras previas */
     const sexNote = document.getElementById("ci-hormonal-sex-note");
@@ -2491,7 +2815,11 @@ async function prefillCheckinFromAstronaut(astronautId) {
       if (ironCb) ironCb.checked = false;
     }
 
-    if (!latest) return;
+    const restCb = document.getElementById("ci-dia-descanso");
+    if (!latest) {
+      if (restCb) restCb.checked = false;
+      return;
+    }
 
     setV("ci-dia", latest.dia_mision);
     setV("ci-sueno-horas", latest.sueno_horas);
@@ -2503,6 +2831,7 @@ async function prefillCheckinFromAstronaut(astronautId) {
     setV("ci-dolor-cabeza", latest.dolor_cabeza);
     setV("ci-mareo", latest.mareo_vestibular);
     setV("ci-ejercicio", latest.ejercicio_min);
+    if (restCb) restCb.checked = latest.dia_descanso === 1;
     setV("ci-cognitivo", Math.round(latest.cognitivo_ms));
     setV("ci-fc", latest.fc);
     setV("ci-pa-sis", latest.pa_sis);
@@ -2536,6 +2865,18 @@ async function prefillCheckinFromAstronaut(astronautId) {
     });
   } catch (err) {
     console.error("Error prellenando check-in:", err);
+  }
+}
+
+function onCheckinRestDayToggle(isRest) {
+  const ejEl = document.getElementById("ci-ejercicio");
+  if (!ejEl) return;
+  if (isRest) {
+    ejEl.value = 0;
+  } else if (parseInt(ejEl.value, 10) === 0) {
+    const astroId = document.getElementById("ci-astronaut")?.value;
+    const astro = astroId ? crewDetailsMap[astroId] : null;
+    ejEl.value = astro?.baseline?.ejercicio_objetivo_min ?? 90;
   }
 }
 
@@ -2632,6 +2973,7 @@ async function submitCrewCheckin(ev) {
     dolor_cabeza: parseInt(document.getElementById("ci-dolor-cabeza").value, 10),
     mareo_vestibular: parseInt(document.getElementById("ci-mareo").value, 10),
     ejercicio_min: parseInt(document.getElementById("ci-ejercicio").value, 10),
+    dia_descanso: document.getElementById("ci-dia-descanso")?.checked ? 1 : 0,
     cognitivo_ms: parseFloat(document.getElementById("ci-cognitivo").value),
     fc: parseFloat(document.getElementById("ci-fc").value),
     pa_sis: parseFloat(document.getElementById("ci-pa-sis").value),
