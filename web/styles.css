@@ -429,6 +429,15 @@ abbr {
   gap: 16px;
   min-height: 76px;
   flex-wrap: wrap;
+  width: 100%;
+  max-width: 1340px;
+  margin-inline: auto;
+}
+
+.option-view {
+  width: 100%;
+  max-width: 1340px;
+  margin-inline: auto;
 }
 
 .topbar-title-col {
@@ -439,26 +448,23 @@ abbr {
 .brand-title-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
-.brand-pulse-mark {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--status-ok);
-  flex-shrink: 0;
-  opacity: 0.9;
+.mission-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1;
 }
 
-.mission-title {
-  font-family: var(--font-brand);
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: #F5F5F5;
-  line-height: 1.15;
+.brand-logo-img {
+  height: 34px;
+  width: auto;
+  max-width: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .brand-divider {
@@ -1770,19 +1776,49 @@ abbr {
 }
 
 .form-columns.form-columns-single {
-  grid-template-columns: minmax(0, 860px);
+  grid-template-columns: minmax(0, 920px);
+  justify-content: center;
+}
+
+.cargar-panel {
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
 }
 
 .form-scroll-wrapper {
+  width: 100%;
   max-width: 960px;
+  margin-inline: auto;
+}
+
+#view-checkin .section-bar,
+#view-modificar .section-bar,
+#view-cargar .section-bar {
+  max-width: 960px;
+  margin-inline: auto;
 }
 
 .form-scroll-flow {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
   max-width: 960px;
+  margin-inline: auto;
   padding-bottom: 36px;
+}
+
+.modify-selector-card {
+  max-width: 960px;
+  margin: 0 auto 24px;
+}
+
+.form-submit-bar {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .form-top-row-comfortable {
@@ -1922,6 +1958,9 @@ abbr {
 }
 
 @media (max-width: 760px) {
+  .brand-logo-img {
+    height: 27px;
+  }
   .toast-banner {
     top: 14px;
     left: 16px;
@@ -2271,21 +2310,21 @@ abbr {
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 3px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
 .sex-f {
-  background: rgba(212, 212, 212, 0.12);
-  color: #E5E5E5;
-  border: 1px solid rgba(212, 212, 212, 0.4);
+  background: rgba(244, 114, 182, 0.16);
+  color: #F472B6;
+  border: 1px solid rgba(244, 114, 182, 0.55);
 }
 
 .sex-m {
-  background: rgba(212, 212, 212, 0.08);
-  color: #D4D4D4;
-  border: 1px solid var(--border-strong);
+  background: rgba(59, 130, 246, 0.16);
+  color: #60A5FA;
+  border: 1px solid rgba(96, 165, 250, 0.55);
 }
 
 .cred-top-meta {
@@ -2294,6 +2333,31 @@ abbr {
   justify-content: space-between;
   align-items: center;
   gap: 6px;
+}
+
+.cred-top-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.routine-warn-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: rgba(251, 191, 36, 0.2);
+  color: #FBBF24;
+  border: 1.5px solid #FBBF24;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.28);
 }
 
 .hormonal-detail-box,
@@ -2676,50 +2740,6 @@ input[type="file"].console-input {
   text-decoration: underline;
 }
 
-.glossary-sources-box {
-  margin-top: 8px;
-}
-
-.glossary-sources-details {
-  width: 100%;
-}
-
-.glossary-sources-summary {
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.94rem;
-  font-weight: 800;
-  color: #ffffff;
-  padding: 4px 2px;
-}
-
-.glossary-sources-summary::-webkit-details-marker {
-  display: none;
-}
-
-.glossary-sources-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.glossary-source-item {
-  background: var(--bg-input);
-  border: 1px solid var(--border-card);
-  border-radius: 5px;
-  padding: 10px 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.86rem;
-}
-
 /* MODO PRIORIDAD TOTAL (MUY CRITICO) */
 .priority-emergency-banner {
   background: linear-gradient(90deg, rgba(185, 28, 28, 0.95), rgba(127, 29, 29, 0.96));
@@ -3010,7 +3030,6 @@ input:disabled {
   .form-columns.form-columns-single,
   .promedio-columns,
   .glossary-cards-grid,
-  .glossary-sources-list,
   .crew-filter-bar {
     grid-template-columns: minmax(0, 1fr);
   }

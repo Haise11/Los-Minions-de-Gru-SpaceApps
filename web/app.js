@@ -35,27 +35,27 @@ let avatarCacheBust = 0;
 let selectedBodyPartKey = null;
 let crewDetailsMap = {};
 
-/* Guias breves e inmediatamente accionables para contramedidas aplicadas */
+/* Guias claras y cotidianas para contramedidas aplicadas */
 const COUNTERMEASURE_GUIDANCE = [
   {
     mask: 32,
     title: "Banda de Compresión en Muslos",
-    howToAct: "1) Ajustar en tercio superior de ambos muslos por 2–4 h diurnas. 2) Vigilar temperatura y pulso distal. 3) Retirar al dormir o ante hormigueo."
+    howToAct: "1) Ponte las bandas en la parte alta de ambos muslos durante 2 a 4 horas mientras estás despierto; ayudan a retener líquidos en las piernas para que no suban tanto a la cabeza y cuiden tu vista. 2) Revisa que tus pies no se enfríen ni pierdan color. 3) Quítatelas antes de dormir o apenas sientas adormecimiento u hormigueo."
   },
   {
     mask: 64,
     title: "Suplementación Complejo B",
-    howToAct: "1) Tomar 1 comprimido diario con comida sólida y 250 ml de agua. 2) Priorizar ante baja visual SANS, cefalea o uso de hierro."
+    howToAct: "1) Toma 1 comprimido diario junto con comida sólida y un vaso de agua (unos 250 ml) para aprovecharlo bien sin caer pesado al estómago. 2) Es clave para cuidar nervios, vista y glóbulos rojos cuando hay indicios visuales (SANS), dolor de cabeza o junto con hierro."
   },
   {
     mask: 128,
     title: "Suplemento de Vitamina D3",
-    howToAct: "1) Tomar 1 dosis diaria junto a la comida principal. 2) Combinar hoy con carga ósea en ARED / CEVIS o protocolo Zero-T2."
+    howToAct: "1) Toma 1 dosis diaria con tu comida principal (las grasas de la comida ayudan a absorberla mejor). 2) En el espacio no recibimos luz solar directa; combinarla hoy con ejercicio de fuerza en ARED, bici CEVIS o rutina Zero-T2 permite que el calcio siga fijándose en los huesos."
   },
   {
     mask: 256,
     title: "Dieta Vegetal Fresca (Veggie)",
-    howToAct: "1) Sumar 1 porción fresca del cultivo Veggie en el menú de hoy. 2) Acompañar con hidratación para optimizar antioxidantes y fibra."
+    howToAct: "1) Agrega al menú de hoy una porción fresca cosechada del invernadero Veggie (lechugas o brotes) para sumar vitaminas naturales, fibra y antioxidantes que no sobreviven igual en comida envasada. 2) Acompaña con buena hidratación para ayudar a la digestión y levantar el ánimo."
   }
 ];
 
@@ -289,10 +289,6 @@ async function loadDefaults() {
     const res = await fetch("/api/defaults");
     if (res.ok) {
       defaults = await res.json();
-      const fcInput = document.getElementById("na-fc-base");
-      const suenoInput = document.getElementById("na-sueno-base");
-      if (fcInput && defaults.fc_base) fcInput.value = defaults.fc_base;
-      if (suenoInput && defaults.sueno_base_h) suenoInput.value = defaults.sueno_base_h;
     }
   } catch (err) {
     console.error("Error cargando valores iniciales:", err);
@@ -336,7 +332,6 @@ async function refreshMissionState(initialLoad = false) {
     crewDetailsMap = nextMap;
 
     updateUrgentStatus(allCrewList);
-    renderCrewRoutineNudges();
     updateMostrarLayoutVisibility();
     renderCrewGrid(allCrewList);
     renderPromedioView(currentMissionData, allCrewList, initialLoad);
@@ -455,12 +450,6 @@ function updateMostrarLayoutVisibility() {
   const crewGrid = document.getElementById("crew-grid");
   if (crewGrid) {
     crewGrid.classList.toggle("hidden", hasDetail);
-  }
-
-  const nudgesPanel = document.getElementById("crew-routine-nudges");
-  if (nudgesPanel) {
-    const hasContent = nudgesPanel.dataset.hasNudges === "1";
-    nudgesPanel.classList.toggle("hidden", !isMostrar || hasDetail || !hasContent);
   }
 }
 
@@ -590,39 +579,6 @@ function buildNudgeHtml(n, showAstroName = true) {
   </div>`;
 }
 
-function renderCrewRoutineNudges() {
-  const container = document.getElementById("crew-routine-nudges");
-  if (!container) return;
-
-  const nudges = [];
-  allCrewList.forEach((c) => {
-    const full = crewDetailsMap[c.id];
-    if (!full) return;
-    const list = computeAstronautRoutineNudges(full);
-    /* Mostrar hasta 2 prioridades por tripulante para mantener claridad operativa */
-    list.slice(0, 2).forEach((n) => nudges.push(n));
-  });
-
-  if (nudges.length === 0) {
-    container.dataset.hasNudges = "0";
-    container.innerHTML = "";
-    container.classList.add("hidden");
-    return;
-  }
-
-  const shown = nudges.slice(0, 5);
-  container.dataset.hasNudges = "1";
-  container.innerHTML = `
-    <div class="routine-nudges-header">
-      <span class="routine-nudges-title">RUTINA OPERATIVA DE MISIÓN · RECORDATORIOS ACTIVOS (${nudges.length})</span>
-      <span class="routine-nudges-sub">Acciones preventivas pendientes antes del cierre de jornada</span>
-    </div>
-    <div class="routine-nudges-list">
-      ${shown.map((n) => buildNudgeHtml(n, true)).join("")}
-    </div>
-  `;
-}
-
 function renderDetailRoutineNudges(astro) {
   const container = document.getElementById("detail-routine-nudges");
   if (!container) return;
@@ -641,28 +597,6 @@ function renderDetailRoutineNudges(astro) {
       <div class="routine-nudges-list">
         ${nudges.slice(0, 3).map((n) => buildNudgeHtml(n, false)).join("")}
       </div>
-    </div>
-  `;
-}
-
-function renderCheckinRoutineNudges(astroId) {
-  const container = document.getElementById("ci-routine-nudges");
-  if (!container) return;
-  const astro = crewDetailsMap[astroId];
-  const nudges = computeAstronautRoutineNudges(astro);
-  if (nudges.length === 0) {
-    container.innerHTML = "";
-    container.classList.add("hidden");
-    return;
-  }
-  container.classList.remove("hidden");
-  container.innerHTML = `
-    <div class="routine-nudges-header">
-      <span class="routine-nudges-title">RECORDATORIOS DE RUTINA PARA ESTE CHECK-IN (${nudges.length})</span>
-      <span class="routine-nudges-sub">Sugerencias preventivas según historial reciente</span>
-    </div>
-    <div class="routine-nudges-list">
-      ${nudges.map((n) => buildNudgeHtml(n, false)).join("")}
     </div>
   `;
 }
@@ -911,9 +845,17 @@ function renderCrewGrid(crewList) {
       const cycleName = isFem && a.fase_ciclo > 0 ? (CYCLE_PHASE_NAMES[a.fase_ciclo] || "") : "";
       const cycleTag = cycleName ? ` · ${cycleName}` : "";
       const sexBadgeHtml = isFem
-        ? `<span class="sex-badge sex-f" title="Fisiología Femenina">♀ FEM${escapeHtml(cycleTag)}</span>`
-        : `<span class="sex-badge sex-m" title="Fisiología Masculina">♂ MASC</span>`;
+        ? `<span class="sex-badge sex-f" title="Fisiología Femenina">♀ Femenino${escapeHtml(cycleTag)}</span>`
+        : `<span class="sex-badge sex-m" title="Fisiología Masculina">♂ Masculino</span>`;
       const vcTagHtml = isVC ? `<span class="vc-priority-chip">🚨 URGENCIA</span>` : "";
+      const fullDetail = crewDetailsMap[a.id];
+      const pendingNudges = fullDetail ? computeAstronautRoutineNudges(fullDetail) : [];
+      const routineWarnHtml =
+        pendingNudges.length > 0
+          ? `<span class="routine-warn-badge" title="${escapeAttr(
+              `${pendingNudges.length} recordatorio(s) de rutina pendiente(s) — clic para ver`
+            )}" aria-label="Recordatorio de rutina pendiente">!</span>`
+          : "";
 
       return `
         <article class="cred-card status-${sev} ${isVC ? "status-very-critical" : ""} ${isSelected}" onclick="selectAstronautCard('${escapeAttr(a.id)}')">
@@ -924,8 +866,11 @@ function renderCrewGrid(crewList) {
             <div class="cred-line-name">
               <div class="cred-top-meta">
                 <span class="cred-role-label">${escapeHtml(a.rol)}</span>
-                ${sexBadgeHtml}
-                ${vcTagHtml}
+                <div class="cred-top-badges">
+                  ${sexBadgeHtml}
+                  ${routineWarnHtml}
+                  ${vcTagHtml}
+                </div>
               </div>
               <strong class="cred-name">${escapeHtml(a.nombre)}</strong>
             </div>
@@ -937,7 +882,7 @@ function renderCrewGrid(crewList) {
             </div>
 
             <div class="cred-line-desc">
-              <span class="cred-desc-label">Diagnóstico / Resumen</span>
+              <span class="cred-desc-label">Diagnóstico</span>
               <div class="cred-desc-value">${escapeHtml(a.resumen_estado || "Normal")}</div>
             </div>
           </div>
@@ -1709,7 +1654,7 @@ function renderAstronautDetailPanel(a) {
   const sexBadge = document.getElementById("detail-sex-badge");
   if (sexBadge) {
     sexBadge.className = `sex-badge ${isFem ? "sex-f" : "sex-m"}`;
-    sexBadge.textContent = isFem ? "♀ FEMENINO" : "♂ MASCULINO";
+    sexBadge.textContent = isFem ? "♀ Femenino" : "♂ Masculino";
   }
 
   const evaBadge = document.getElementById("detail-eva-badge");
@@ -2000,7 +1945,7 @@ function renderAstronautDetailPanel(a) {
         if (femSummary) {
           femSummary.classList.toggle("hidden", !ironActive);
           femSummary.innerHTML = ironActive
-            ? `<strong>PROTOCOLO ACTIVO · Hierro + Hidratación (+350 ml)</strong><span>1) Tomar 1 dosis de hierro elemental + folato/Complejo B con 350 ml de agua (evitar café/té 1 h). 2) Vigilar mareo ortostático y reevaluar intensidad del flujo en el próximo check-in.</span>`
+            ? `<strong>PROTOCOLO ACTIVO · Hierro + Hidratación (+350 ml)</strong><span>1) Toma 1 dosis de hierro con comida y Complejo B junto a un vaso grande de agua (350 ml); evita café o té durante 1 hora porque frenan su absorción. 2) Si notas mareo al incorporarte o mucho cansancio, avisa de inmediato y vuelve a registrar la intensidad en el próximo control.</span>`
             : "";
         }
       } else {
@@ -2789,8 +2734,6 @@ async function prefillCheckinFromAstronaut(astronautId) {
     const latest = hist.length > 0 ? hist[hist.length - 1] : null;
     const isFem = (a.sexo || "M").toUpperCase() === "F";
 
-    renderCheckinRoutineNudges(astronautId);
-
     /* Mostrar/ocultar bloque hormonal femenino ANTES de verificar muestras previas */
     const sexNote = document.getElementById("ci-hormonal-sex-note");
     const hormBox = document.getElementById("ci-hormonal-box");
@@ -3222,24 +3165,71 @@ async function submitImportedJson() {
   }
 }
 
+function readRequiredNumberField(id, label, isInt = false) {
+  const el = document.getElementById(id);
+  const raw = el ? el.value.trim() : "";
+  const val = isInt ? parseInt(raw, 10) : parseFloat(raw);
+  if (!raw || !Number.isFinite(val)) {
+    throw new Error(`Completa el campo obligatorio: ${label}`);
+  }
+  return val;
+}
+
 async function submitNewAstronaut(ev) {
   ev.preventDefault();
-  const base = Object.assign({}, defaults || {});
-  delete base.NASA_CAREER_RAD_LIMIT_MSV;
-  const fcVal = parseFloat(document.getElementById("na-fc-base").value);
-  const suenoVal = parseFloat(document.getElementById("na-sueno-base").value);
-  const radPrevVal = parseFloat(document.getElementById("na-rad-previa").value);
-  base.fc_base = Number.isFinite(fcVal) ? fcVal : 70;
-  base.sueno_base_h = Number.isFinite(suenoVal) ? suenoVal : 7.5;
+  const idVal = document.getElementById("na-id")?.value.trim() || "";
+  const nombreVal = document.getElementById("na-nombre")?.value.trim() || "";
+  const sexoVal = document.getElementById("na-sexo")?.value || "";
+  const rolVal = document.getElementById("na-rol")?.value.trim() || "";
+  const predefinedAvatar = document.getElementById("na-avatar")?.value || "";
+
+  if (!idVal || !nombreVal || !sexoVal || !rolVal) {
+    showToast("Completa todos los datos de identidad y sexo biológico.", true);
+    return;
+  }
+  if (!newAstronautCustomAvatarDataUrl && !predefinedAvatar) {
+    showToast("Selecciona un avatar predefinido o sube una foto personalizada.", true);
+    return;
+  }
+
+  let radPrevVal;
+  let base;
+  try {
+    radPrevVal = readRequiredNumberField("na-rad-previa", "Radiación Previa de Carrera (mSv)");
+    base = {
+      fc_base: readRequiredNumberField("na-fc-base", "FC Basal (lpm)"),
+      pa_sis_base: readRequiredNumberField("na-pa-sis-base", "Presión Sistólica Basal (mmHg)"),
+      pa_dia_base: readRequiredNumberField("na-pa-dia-base", "Presión Diastólica Basal (mmHg)"),
+      spo2_base: readRequiredNumberField("na-spo2-base", "SpO₂ Basal (%)"),
+      temp_base: readRequiredNumberField("na-temp-base", "Temperatura Basal (°C)"),
+      glucosa_base: readRequiredNumberField("na-glucosa-base", "Glucemia Basal (mg/dL)"),
+      peso_base: readRequiredNumberField("na-peso-base", "Peso Basal (kg)"),
+      sueno_base_h: readRequiredNumberField("na-sueno-base", "Meta de Sueño (h/día)"),
+      animo_base: readRequiredNumberField("na-animo-base", "Ánimo Basal (1–10)", true),
+      estres_base: readRequiredNumberField("na-estres-base", "Estrés Basal (1–10)", true),
+      cognitivo_base_ms: readRequiredNumberField("na-cog-base", "Reflejos PVT Basales (ms)"),
+      calorias_objetivo_kcal: readRequiredNumberField("na-cal-base", "Meta Calórica (kcal/día)", true),
+      hidratacion_objetivo_ml: readRequiredNumberField("na-hid-base", "Meta de Hidratación (ml/día)", true),
+      apetito_base: readRequiredNumberField("na-apetito-base", "Apetito Basal (1–5)", true),
+      vision_base: readRequiredNumberField("na-vision-base", "Índice Visual Basal"),
+      densidad_osea_base_pct: readRequiredNumberField("na-osea-base", "Densidad Ósea Basal (%)"),
+      ejercicio_objetivo_min: readRequiredNumberField("na-ej-base", "Meta de Ejercicio Activo (min/día)", true),
+      pre_resp_o2_objetivo_min: readRequiredNumberField("na-preresp-base", "Objetivo Pre-Respiración O₂ EVA (min)", true),
+      dosis_diaria_nominal_msv: readRequiredNumberField("na-dosis-nom-base", "Dosis Nominal Diaria (mSv/día)")
+    };
+  } catch (validationErr) {
+    showToast(validationErr.message || "Completa todos los valores basales.", true);
+    return;
+  }
 
   const payload = {
-    id: document.getElementById("na-id").value.trim(),
-    nombre: document.getElementById("na-nombre").value.trim(),
-    sexo: document.getElementById("na-sexo")?.value || "M",
-    rol: document.getElementById("na-rol").value.trim(),
+    id: idVal,
+    nombre: nombreVal,
+    sexo: sexoVal,
+    rol: rolVal,
     mission_id: currentMissionId || "artemis_sim",
-    avatar: newAstronautCustomAvatarDataUrl || document.getElementById("na-avatar").value,
-    radiacion_previa_msv: Number.isFinite(radPrevVal) ? radPrevVal : 0,
+    avatar: newAstronautCustomAvatarDataUrl || predefinedAvatar,
+    radiacion_previa_msv: radPrevVal,
     baseline: base
   };
 
@@ -3255,6 +3245,7 @@ async function submitNewAstronaut(ev) {
       return;
     }
     showToast(`Astronauta ${data.nombre} registrado correctamente.`);
+    document.getElementById("new-astronaut-form")?.reset();
     clearNewAstronautCustomAvatar();
     currentAstronautId = data.id;
     switchOptionView("mostrar");
@@ -3440,7 +3431,6 @@ function toggleGlossaryItem(itemId) {
 
 function renderGlossary() {
   const grid = document.getElementById("glossary-cards-grid");
-  const sourcesBox = document.getElementById("glossary-sources-list");
   const countBadge = document.getElementById("glossary-count-badge");
   if (!grid) return;
 
@@ -3482,9 +3472,9 @@ function renderGlossary() {
               <h3 class="glossary-card-title">${escapeHtml(item.title)}</h3>
             </button>
             <div class="glossary-card-body ${isExpanded ? "" : "hidden"}">
-              <div class="glossary-thresholds"><strong>Definición / Umbrales:</strong> ${escapeHtml(item.thresholds)}</div>
+              <div class="glossary-thresholds"><strong>En números y límites:</strong> ${escapeHtml(item.thresholds)}</div>
               <p class="glossary-summary">${escapeHtml(item.summary)}</p>
-              <div class="glossary-protocol"><strong>Aplicación Clínica / Protocolo:</strong> ${escapeHtml(item.protocol)}</div>
+              <div class="glossary-protocol"><strong>Qué hacer en la práctica:</strong> ${escapeHtml(item.protocol)}</div>
               <div class="glossary-source-row">
                 <span class="mono-tag">${escapeHtml(catLabel)}</span>
                 <a class="glossary-source-link" href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener noreferrer">
@@ -3493,23 +3483,6 @@ function renderGlossary() {
               </div>
             </div>
           </article>
-        `;
-      })
-      .join("");
-  }
-
-  if (sourcesBox && Array.isArray(glossaryData.sources)) {
-    sourcesBox.innerHTML = glossaryData.sources
-      .map((src) => {
-        const safeUrl = /^https?:\/\//i.test(src.url || "") ? src.url : "#";
-        return `
-          <div class="glossary-source-item">
-            <div>
-              <div class="mono-tag">${escapeHtml(src.agency)}</div>
-              <strong style="display:block; margin-top:4px; color:#ffffff;">${escapeHtml(src.title)}</strong>
-            </div>
-            <a class="glossary-source-link" href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener noreferrer">Abrir ↗</a>
-          </div>
         `;
       })
       .join("");

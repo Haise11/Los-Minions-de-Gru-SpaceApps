@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>P.U.L.S.O. — Monitor Médico de Tripulación</title>
+  <link rel="icon" type="image/png" href="assets/pulso-favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -117,8 +118,9 @@
       <header id="main-topbar" class="mission-topbar">
         <div class="topbar-title-col">
           <div class="brand-title-row">
-            <span class="brand-pulse-mark" aria-hidden="true"></span>
-            <h1 id="main-page-title" class="mission-title">P.U.L.S.O.</h1>
+            <h1 id="main-page-title" class="mission-title">
+              <img src="assets/pulso-logo.png" alt="P.U.L.S.O." class="brand-logo-img" />
+            </h1>
             <span class="brand-divider" aria-hidden="true"></span>
             <span class="brand-subtitle">Programa Unificado para La Salud Óptima</span>
           </div>
@@ -209,9 +211,6 @@
             </select>
           </div>
         </div>
-
-        <!-- Panel proactivo de recordatorios y rutina de mision -->
-        <div id="crew-routine-nudges" class="routine-nudges-panel hidden" aria-live="polite"></div>
 
         <!-- Grilla de tarjetas de tripulantes -->
         <div id="crew-grid" class="crew-grid"></div>
@@ -463,28 +462,28 @@
                       <strong>Banda en Muslos</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>1) Ajustar en muslo superior 2–4 h diurnas. 2) Retirar al dormir o si hay hormigueo.</small>
+                    <small>Ajusta una banda elástica arriba de cada muslo entre 2 y 4 h de día para evitar que los líquidos suban a la cabeza. Quítala al dormir o si hay hormigueo.</small>
                   </button>
                   <button type="button" id="cm-btn-bcomp" class="cm-action-card" onclick="toggleQuickCountermeasure(64)">
                     <div class="cm-card-top">
                       <strong>Complejo B</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>1) Tomar 1 dosis oral diaria con comida. 2) Priorizar ante indicios SANS o ferropenia.</small>
+                    <small>Toma 1 comprimido al día con comida para cuidar vasos sanguíneos, energía y nervios. Es muy útil si hay baja de vista (SANS) o falta de hierro.</small>
                   </button>
                   <button type="button" id="cm-btn-vitd" class="cm-action-card" onclick="toggleQuickCountermeasure(128)">
                     <div class="cm-card-top">
                       <strong>Vitamina D3</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>1) Tomar 1 dosis diaria con comida principal. 2) Combinar con carga ARED / CEVIS.</small>
+                    <small>Toma 1 dosis al día junto a la comida principal. Reemplaza el efecto del sol para que el calcio siga entrando a los huesos al entrenar en ARED o CEVIS.</small>
                   </button>
                   <button type="button" id="cm-btn-veggie" class="cm-action-card" onclick="toggleQuickCountermeasure(256)">
                     <div class="cm-card-top">
                       <strong>Dieta Vegetal Fresca</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>1) Sumar 1 porción fresca del módulo Veggie hoy. 2) Acompañar con hidratación.</small>
+                    <small>Agrega hoy una porción recién cosechada del módulo Veggie y acompáñala con agua; suma vitaminas frescas, antioxidantes y mejora el ánimo.</small>
                   </button>
                 </div>
 
@@ -507,7 +506,7 @@
                       <strong>Suplemento Hierro + Hidratación (+350 ml)</strong>
                       <span class="cm-state-pill">INACTIVA</span>
                     </div>
-                    <small>1) Tomar 1 dosis de hierro elemental + 350 ml con electrolitos. 2) Evitar café/té 1 h.</small>
+                    <small>Toma 1 dosis de hierro junto a 350 ml de agua con sales minerales para reponer glóbulos rojos. Evita café o té durante 1 h para absorberlo mejor.</small>
                   </button>
                 </div>
                 <div id="cm-fem-action-summary" class="cm-fem-action-summary hidden"></div>
@@ -604,8 +603,6 @@
                 </button>
               </div>
             </div>
-
-            <div id="ci-routine-nudges" class="routine-nudges-panel routine-nudges-compact hidden" aria-live="polite"></div>
 
             <!-- Bloque 1: Rutina Fisica y Descanso Programado -->
             <div class="form-card form-card-spacious">
@@ -882,66 +879,152 @@
         </div>
 
         <!-- SUB-TAB 2: CREAR NUEVO ASTRONAUTA (ACTIVO POR DEFECTO) -->
-        <div id="cargar-tab-create" class="cargar-panel">
+        <div id="cargar-tab-create" class="cargar-panel form-scroll-wrapper">
           <div class="form-columns form-columns-single">
-            <div class="form-card">
-              <h3 class="box-title">REGISTRAR NUEVO ASTRONAUTA (VALORES BASE RECOMENDADOS)</h3>
-              <form id="new-astronaut-form" onsubmit="submitNewAstronaut(event)">
-                <div class="input-grid-2">
-                  <div class="form-group">
-                    <label for="na-id">Identificador Único (letras, números y guiones)</label>
-                    <input type="text" id="na-id" class="console-input" placeholder="astro_05" maxlength="15" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="na-nombre">Nombre Completo</label>
-                    <input type="text" id="na-nombre" class="console-input" placeholder="Dra. Valentina Ríos" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="na-sexo">Sexo Biológico</label>
-                    <select id="na-sexo" class="console-input">
-                      <option value="F">♀ Femenino (Monitoreo Ciclo Hormonal / Hierro)</option>
-                      <option value="M">♂ Masculino</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="na-rol">Rol Clínico / Especialidad</label>
-                    <input type="text" id="na-rol" class="console-input" placeholder="Especialista en Exobiología" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="na-avatar">Avatar Predefinido</label>
-                    <select id="na-avatar" class="console-input" onchange="onPredefinedAvatarChange(this.value)">
-                      <option value="assets/avatars/astro_01.svg">Retrato Credencial 01 (Comandante)</option>
-                      <option value="assets/avatars/astro_02.svg">Retrato Credencial 02 (Oficial Médico)</option>
-                      <option value="assets/avatars/astro_03.svg">Retrato Credencial 03 (Ingeniero)</option>
-                      <option value="assets/avatars/astro_04.svg">Retrato Credencial 04 (Especialista)</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="na-rad-previa">Radiación Previa Carrera (mSv)</label>
-                    <input type="number" step="0.1" min="0" max="600" id="na-rad-previa" class="console-input" value="15.0" required />
-                  </div>
-                  <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="na-avatar-file">📷 Subir Fotografía Personalizada desde tu Dispositivo (PNG, JPG, WEBP, SVG)</label>
-                    <div class="custom-avatar-upload-row">
-                      <img id="na-avatar-preview" class="upload-preview-thumb" src="assets/avatars/astro_01.svg" alt="Vista previa de credencial" />
-                      <div class="custom-avatar-upload-controls">
-                        <input type="file" id="na-avatar-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="console-input" onchange="onNewAstronautAvatarFile(event)" />
-                        <small id="na-avatar-status" class="upload-status-note">Usando avatar predefinido o selecciona una imagen local (&le; 2 MB)</small>
+            <div class="form-card form-card-spacious">
+              <h3 class="box-title">REGISTRAR NUEVO ASTRONAUTA</h3>
+              <form id="new-astronaut-form" class="form-scroll-flow" onsubmit="submitNewAstronaut(event)">
+                <div class="modify-subgroup">
+                  <h4 class="modify-subgroup-title">1 · Identidad, Dosimetría Previa y Fotografía</h4>
+                  <div class="input-grid-comfortable">
+                    <div class="form-group">
+                      <label for="na-id">Identificador Único (letras, números y guiones)</label>
+                      <input type="text" id="na-id" class="console-input" placeholder="Ingresar ID único" maxlength="15" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-nombre">Nombre Completo</label>
+                      <input type="text" id="na-nombre" class="console-input" placeholder="Ingresar nombre completo" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-sexo">Sexo Biológico</label>
+                      <select id="na-sexo" class="console-input" required>
+                        <option value="" selected disabled>Seleccionar sexo...</option>
+                        <option value="F">♀ Femenino (Monitoreo Ciclo Hormonal / Hierro)</option>
+                        <option value="M">♂ Masculino</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="na-rol">Rol Clínico / Especialidad</label>
+                      <input type="text" id="na-rol" class="console-input" placeholder="Ingresar especialidad" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-avatar">Avatar Predefinido</label>
+                      <select id="na-avatar" class="console-input" onchange="onPredefinedAvatarChange(this.value)">
+                        <option value="" selected>Seleccionar retrato predefinido...</option>
+                        <option value="assets/avatars/astro_01.svg">Retrato Credencial 01 (Comandante)</option>
+                        <option value="assets/avatars/astro_02.svg">Retrato Credencial 02 (Oficial Médico)</option>
+                        <option value="assets/avatars/astro_03.svg">Retrato Credencial 03 (Ingeniero)</option>
+                        <option value="assets/avatars/astro_04.svg">Retrato Credencial 04 (Especialista)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="na-rad-previa">Radiación Previa de Carrera (mSv)</label>
+                      <input type="number" step="0.1" min="0" max="600" id="na-rad-previa" class="console-input" placeholder="Ingresar mSv acumulados" required />
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label for="na-avatar-file">📷 Subir Fotografía Personalizada desde tu Dispositivo (PNG, JPG, WEBP, SVG)</label>
+                      <div class="custom-avatar-upload-row">
+                        <img id="na-avatar-preview" class="upload-preview-thumb" src="assets/avatars/astro_01.svg" alt="Vista previa de credencial" />
+                        <div class="custom-avatar-upload-controls">
+                          <input type="file" id="na-avatar-file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" class="console-input" onchange="onNewAstronautAvatarFile(event)" />
+                          <small id="na-avatar-status" class="upload-status-note">Elige un retrato predefinido o sube una imagen local (&le; 2 MB)</small>
+                        </div>
+                        <button type="button" class="action-btn btn-secondary" onclick="clearNewAstronautCustomAvatar()">Limpiar Foto</button>
                       </div>
-                      <button type="button" class="action-btn btn-secondary" onclick="clearNewAstronautCustomAvatar()">Limpiar Foto</button>
                     </div>
                   </div>
-                  <div class="form-group">
-                    <label for="na-fc-base">FC Basal (lpm)</label>
-                    <input type="number" step="0.5" min="30" max="200" id="na-fc-base" class="console-input" value="70" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="na-sueno-base">Meta de Sueño (h/día)</label>
-                    <input type="number" step="0.1" min="1" max="16" id="na-sueno-base" class="console-input" value="7.5" required />
+                </div>
+
+                <div class="modify-subgroup">
+                  <h4 class="modify-subgroup-title">2 · Parámetros Clínicos Basales (Ingresados por el Usuario)</h4>
+                  <div class="input-grid-comfortable">
+                    <div class="form-group">
+                      <label for="na-fc-base">FC Basal (lpm)</label>
+                      <input type="number" step="0.5" min="30" max="200" id="na-fc-base" class="console-input" placeholder="Ingresar lpm" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-pa-sis-base">Presión Sistólica Basal (mmHg)</label>
+                      <input type="number" step="1" min="60" max="220" id="na-pa-sis-base" class="console-input" placeholder="Ingresar mmHg" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-pa-dia-base">Presión Diastólica Basal (mmHg)</label>
+                      <input type="number" step="1" min="35" max="140" id="na-pa-dia-base" class="console-input" placeholder="Ingresar mmHg" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-spo2-base">SpO₂ Basal (%)</label>
+                      <input type="number" step="0.1" min="70" max="100" id="na-spo2-base" class="console-input" placeholder="Ingresar %" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-temp-base">Temperatura Basal (°C)</label>
+                      <input type="number" step="0.1" min="33" max="41" id="na-temp-base" class="console-input" placeholder="Ingresar °C" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-glucosa-base">Glucemia Basal (mg/dL)</label>
+                      <input type="number" step="1" min="40" max="300" id="na-glucosa-base" class="console-input" placeholder="Ingresar mg/dL" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-peso-base">Peso Basal (kg)</label>
+                      <input type="number" step="0.1" min="30" max="200" id="na-peso-base" class="console-input" placeholder="Ingresar kg" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-vision-base">Índice Visual Basal (0.1–2.0)</label>
+                      <input type="number" step="0.01" min="0.1" max="2.0" id="na-vision-base" class="console-input" placeholder="Ingresar agudeza visual" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-osea-base">Densidad Ósea Basal (%)</label>
+                      <input type="number" step="0.5" min="50" max="150" id="na-osea-base" class="console-input" placeholder="Ingresar %" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-dosis-nom-base">Dosis Nominal Diaria (mSv/día)</label>
+                      <input type="number" step="0.01" min="0" max="10" id="na-dosis-nom-base" class="console-input" placeholder="Ingresar mSv/día" required />
+                    </div>
                   </div>
                 </div>
+
+                <div class="modify-subgroup">
+                  <h4 class="modify-subgroup-title">3 · Metas Diarias de Sueño, Conducta, Nutrición y EVA</h4>
+                  <div class="input-grid-comfortable">
+                    <div class="form-group">
+                      <label for="na-sueno-base">Meta de Sueño (h/día)</label>
+                      <input type="number" step="0.1" min="1" max="16" id="na-sueno-base" class="console-input" placeholder="Ingresar horas" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-animo-base">Ánimo Basal (1–10)</label>
+                      <input type="number" min="1" max="10" id="na-animo-base" class="console-input" placeholder="Escala 1–10" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-estres-base">Estrés Basal (1–10)</label>
+                      <input type="number" min="1" max="10" id="na-estres-base" class="console-input" placeholder="Escala 1–10" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-cog-base">Reflejos PVT Basales (ms)</label>
+                      <input type="number" step="1" min="80" max="1500" id="na-cog-base" class="console-input" placeholder="Ingresar ms" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-cal-base">Meta Calórica (kcal/día)</label>
+                      <input type="number" step="50" min="800" max="6000" id="na-cal-base" class="console-input" placeholder="Ingresar kcal" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-hid-base">Meta de Hidratación (ml/día)</label>
+                      <input type="number" step="50" min="500" max="6000" id="na-hid-base" class="console-input" placeholder="Ingresar ml" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-apetito-base">Apetito Basal (1–5)</label>
+                      <input type="number" min="1" max="5" id="na-apetito-base" class="console-input" placeholder="Escala 1–5" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="na-ej-base">Meta de Ejercicio Activo (min/día)</label>
+                      <input type="number" step="5" min="0" max="300" id="na-ej-base" class="console-input" placeholder="Ingresar min/día" required />
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                      <label for="na-preresp-base">Objetivo Pre-Respiración O₂ EVA (min)</label>
+                      <input type="number" step="5" min="0" max="480" id="na-preresp-base" class="console-input" placeholder="Ingresar min" required />
+                    </div>
+                  </div>
+                </div>
+
                 <div class="form-submit-bar">
-                  <button type="submit" class="action-btn btn-primary">＋ Crear Astronauta</button>
+                  <button type="submit" class="action-btn btn-primary btn-large">＋ Crear Astronauta</button>
                 </div>
               </form>
             </div>
@@ -1414,16 +1497,6 @@
         </div>
 
         <div id="glossary-cards-grid" class="glossary-cards-grid"></div>
-
-        <div class="detail-box glossary-sources-box">
-          <details class="glossary-sources-details">
-            <summary class="glossary-sources-summary">
-              <span>📚 FUENTES CIENTÍFICAS DE REFERENCIA (NASA / CSA)</span>
-              <span class="glossary-expand-cue">Clic para desplegar enlaces ▾</span>
-            </summary>
-            <div id="glossary-sources-list" class="glossary-sources-list"></div>
-          </details>
-        </div>
       </section>
     </main>
   </div>

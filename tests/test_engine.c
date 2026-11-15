@@ -750,6 +750,8 @@ static void test_http_rest_api_and_static_files(void) {
     assert(send_local_http_req(&mgr, port, "GET", "/styles.css", NULL, resp, sizeof(resp)) == 200);
     assert(send_local_http_req(&mgr, port, "GET", "/app.js", NULL, resp, sizeof(resp)) == 200);
     assert(send_local_http_req(&mgr, port, "GET", "/assets/avatars/astro_01.svg", NULL, resp, sizeof(resp)) == 200);
+    assert(send_local_http_req(&mgr, port, "GET", "/assets/pulso-logo.png", NULL, resp, sizeof(resp)) == 200);
+    assert(send_local_http_req(&mgr, port, "GET", "/assets/pulso-favicon.png", NULL, resp, sizeof(resp)) == 200);
 
     /* 2. GET /api/defaults y GET /api/glossary */
     assert(send_local_http_req(&mgr, port, "GET", "/api/defaults", NULL, resp, sizeof(resp)) == 200);

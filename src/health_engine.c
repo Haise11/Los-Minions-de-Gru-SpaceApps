@@ -182,7 +182,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Radi-N2 / CANS / Riesgo por Radiación",
                    "Tormenta Solar SPE / Pico Dosimetrico",
                    exp,
-                   "1) Ingresar al refugio blindado y suspender EVA. 2) Activar dosimetria continua (Radi-N2/CANS). 3) Reforzar blindaje con bolsas de agua.");
+                   "1) Entra cuanto antes al refugio más protegido de la nave y cancela cualquier salida al exterior (EVA). 2) Deja encendidos todo el tiempo los detectores Radi-N2 y CANS para vigilar cuánto baja la radiación. 3) Refuerza las paredes del refugio con bolsas de agua o víveres, porque frenan muy bien las partículas solares.");
     } else if (s->dosis_dia_msv >= 1.0f) {
         char exp[192];
         snprintf(exp, sizeof(exp),
@@ -196,7 +196,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Radi-N2 / CANS / Riesgo por Radiación",
                    "Exposicion Diaria a Radiacion Elevada",
                    exp,
-                   "1) Limitar tiempo en modulos externos. 2) Verificar lectura de neutrones (Radi-N2/CANS). 3) Rotar tareas hacia zona central.");
+                   "1) Pasa menos tiempo en los módulos de pared más fina o cerca de ventanas. 2) Revisa los lectores Radi-N2 y CANS para confirmar que no siga subiendo. 3) Cambia tus tareas hacia la zona central de la nave donde hay más protección.");
     }
 
     float total_career_rad = a->radiacion_previa_msv + a->radiacion_mision_msv;
@@ -213,7 +213,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Radi-N2 / CANS / Riesgo por Radiación",
                    "Limite de Radiacion de Carrera Alcanzado",
                    exp,
-                   "1) Prohibir toda nueva salida EVA. 2) Reubicar al tripulante en sector de maximo blindaje. 3) Programar rotacion prioritaria.");
+                   "1) No hagas ninguna caminata espacial nueva para no sumar más dosis. 2) Trabaja y duerme siempre en el sector mejor blindado de la nave. 3) Coordina rotación prioritaria para reducir tu exposición acumulada.");
     } else if (total_career_rad >= 480.0f) {
         char exp[192];
         snprintf(exp, sizeof(exp),
@@ -227,7 +227,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Radi-N2 / CANS / Riesgo por Radiación",
                    "Acercamiento a Limite de Radiacion (80%)",
                    exp,
-                   "1) Restringir EVA no esenciales. 2) Reasignar turnos en zonas de menor tasa dosimetrica.");
+                   "1) Evita caminatas espaciales que no sean urgentes para guardar margen seguro. 2) Reorganiza tus turnos en áreas internas con menor nivel de radiación.");
     }
 
     /* =====================================================================
@@ -247,7 +247,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Riesgo SANS / Bandas en Muslos / Presión Intracraneal",
                    "Sindrome Neuro-Ocular Crítico (SANS)",
                    exp,
-                   "1) Colocar bandas de compresion en muslos (2-4 h diurnas). 2) Administrar Complejo B diario. 3) Realizar fondo de ojo / ecografia ocular (Tempus Pro).");
+                   "1) Ponte bandas elásticas en los muslos de 2 a 4 horas durante el día para frenar que los líquidos suban a la cabeza. 2) Toma Complejo B hoy mismo con comida. 3) Hazte un chequeo de fondo de ojo y ecografía ocular con Tempus Pro.");
     } else if (vision_drop >= 0.15f - 1e-4f &&
                (s->dolor_cabeza >= 4 || s->pa_sis >= b->pa_sis_base + 20.0f - 1e-4f)) {
         char exp[192];
@@ -263,7 +263,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Riesgo SANS / Bandas en Muslos / Presión Intracraneal",
                    "Alerta Neuro-Ocular (SANS)",
                    exp,
-                   "1) Activar bandas en muslos (2-4 h/dia). 2) Tomar Complejo B con comida. 3) Programar ecografia ocular / OCT (Tempus Pro).");
+                   "1) Ponte bandas en los muslos 2 a 4 horas al día (y quítalas si duermes o sientes hormigueo). 2) Toma Complejo B con una comida para apoyar los vasos sanguíneos. 3) Revisa tus ojos con el ecógrafo Tempus Pro.");
     }
 
     /* =====================================================================
@@ -282,7 +282,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Riesgo de Hipoxia / Tempus Pro",
                    "Hipoxia Critica / Caida de O2 en Cabina",
                    exp,
-                   "1) Administrar O2 suplementario al 100%. 2) Suspender toda carga fisica. 3) Revisar valvulas pO2 del ECLSS de inmediato.");
+                   "1) Ponte mascarilla de oxígeno al 100% de inmediato para recuperar aire en sangre. 2) Quédate en reposo absoluto sin esfuerzo físico. 3) Revisa urgente las válvulas de oxígeno del sistema de soporte vital (ECLSS).");
     } else if (s->spo2 < 94.0f || env->po2_kpa < 18.0f) {
         char exp[192];
         snprintf(exp, sizeof(exp),
@@ -296,7 +296,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Riesgo de Hipoxia / Tempus Pro",
                    "Precaucion por Hipoxia / Baja pO2",
                    exp,
-                   "1) Aplicar O2 suplementario y bajar ritmo fisico. 2) Revisar flujo O2 del ECLSS. 3) Vigilar SpO2 continuo en Tempus Pro.");
+                   "1) Usa oxígeno extra y baja el ritmo de trabajo físico mientras se estabiliza la cabina. 2) Verifica que el flujo de oxígeno del ECLSS esté normal. 3) Vigila tu saturación continua con el monitor Tempus Pro.");
     }
 
     if (env->pco2_kpa > 0.8f) {
@@ -312,7 +312,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Entornos Cerrados Hostiles / ECLSS",
                    "Hipercapnia Critica por Acumulacion de CO2",
                    exp,
-                   "1) Ventilar modulo y aislar fuente de CO2. 2) Activar respaldo LiOH si falla CDRA/CAMRAS. 3) Usar mascarilla de O2 si persiste cefalea.");
+                   "1) Ventila el módulo de inmediato y busca de dónde sale tanto CO2 estancado. 2) Si los filtros principales CDRA o CAMRAS fallan, coloca cartuchos de emergencia LiOH. 3) Usa mascarilla de oxígeno si te duele fuerte la cabeza.");
     } else if (env->pco2_kpa > 0.5f &&
                (s->dolor_cabeza >= 4 || s->cognitivo_ms > b->cognitivo_base_ms * 1.20f)) {
         char exp[192];
@@ -327,7 +327,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Entornos Cerrados Hostiles / ECLSS (CDRA / CAMRAS)",
                    "Hipercapnia / Revisar Depurador de CO2",
                    exp,
-                   "1) Inspeccionar depurador nominal CDRA/CAMRAS y ventilacion. 2) Hidratar y re-medir pCO2 antes de atribuir sintomas a fatiga.");
+                   "1) Revisa los purificadores de aire CDRA/CAMRAS y asegúrate de que los ventiladores circulen el aire (en ingravidez el CO2 se estanca). 2) Toma agua y vuelve a medir el CO2 antes de pensar que solo estás cansado.");
     }
 
     /* =====================================================================
@@ -348,7 +348,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Riesgo de Enfermedad Descompresiva / EVA (ISLE)",
                    "Riesgo Critico de Descompresion (DCS Post-EVA)",
                    exp,
-                   "1) Administrar O2 al 100% inmediato. 2) Inmovilizar articulación afectada. 3) Examen neurológico y preparar recompresión en esclusa/traje.");
+                   "1) Respira oxígeno puro al 100% ya mismo para ayudar a disolver burbujas de nitrógeno en las articulaciones. 2) Mantén quieta la zona con dolor. 3) Revisa reflejos y fuerza, y prepara recompresión en la esclusa o traje.");
     }
 
     /* =====================================================================
@@ -372,7 +372,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Adaptaciones Cardiovasculares / Hemostasia Venosa / Tempus Pro",
                    "Inestabilidad Cardiovascular Critica",
                    exp,
-                   "1) Posición supina o piernas elevadas. 2) Carga rápida de fluidos y electrolitos. 3) ECG y ultrasonido vascular con Tempus Pro.");
+                   "1) Acuéstate boca arriba o levanta un poco las piernas para que llegue bien sangre al cerebro. 2) Toma agua con sales/electrolitos despacio pero sin demora. 3) Revisa corazón y venas con el monitor portátil Tempus Pro.");
     } else if (s->fc > b->fc_base + 25.0f || s->fc > 105.0f || s->fc < 45.0f ||
                s->pa_sis < 90.0f || s->pa_sis > 140.0f || ortho_dizzy || low_hydration) {
         char exp[192];
@@ -388,7 +388,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Adaptaciones Cardiovasculares / Hemostasia Venosa / Tempus Pro",
                    "Adaptacion Cardiovascular / Hemostasia Venosa",
                    exp,
-                   "1) Ingerir 350-500 ml de agua con electrolitos. 2) Usar prenda de compresión inferior. 3) Verificar flujo venoso en Tempus Pro.");
+                   "1) Bebe entre 350 y 500 ml de agua con electrolitos para recuperar volumen de sangre. 2) Usa prenda de compresión en piernas si sientes mareo al levantarte. 3) Controla tu flujo venoso con Tempus Pro.");
     }
 
     if (ej_7d < 45.0f) {
@@ -404,7 +404,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "ARED / CEVIS / Protocolo Zero-T2 (Sin Cinta)",
                    "Riesgo Severo de Perdida Osea y Muscular",
                    exp,
-                   "1) Completar >= 90 min/día de ejercicio activo (ARED + CEVIS / protocolo sin cinta Zero-T2). 2) Tomar Vitamina D3 diaria.");
+                   "1) Retoma ya los 90 min diarios de ejercicio activo (pesas ARED, bici CEVIS o protocolo sin cinta Zero-T2) para que huesos y músculos no se debiliten. 2) Toma tu Vitamina D3 diaria con la comida principal.");
     } else if (ej_7d < 60.0f) {
         char exp[192];
         snprintf(exp, sizeof(exp),
@@ -418,7 +418,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "ARED / CEVIS / Protocolo Zero-T2 (Sin Cinta)",
                    "Desacondicionamiento Musculoesqueletico",
                    exp,
-                   "1) Retomar >= 90 min/día en ARED / CEVIS (o protocolo Zero-T2). 2) Confirmar suplementación diaria de Vitamina D3.");
+                   "1) Sube de a poco hasta completar 90 min activos/día en ARED, bici CEVIS o protocolo Zero-T2. 2) Asegúrate de tomar tu Vitamina D3 hoy para ayudar a fijar calcio en los huesos.");
     }
 
     if (s->mareo_vestibular >= 5 ||
@@ -436,7 +436,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Sensoriomotor, Mareo Espacial (SMS) y Cargas Dinámicas",
                    "Alteracion Vestibular / Mareo Espacial (No apto)",
                    exp,
-                   "1) Diferir pilotaje manual y EVA por 24-48 h (No apto). 2) Fijar punto visual estable, evitar movimientos cefálicos bruscos e hidratar.");
+                   "1) Pospón pilotaje manual y caminatas EVA durante 24 a 48 horas hasta que pase el mareo. 2) Fija la vista en un punto estable, evita girar rápido la cabeza e hidrátate bien.");
     }
 
     /* =====================================================================
@@ -462,7 +462,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Biomarcadores Inmunes / Microbioma / Medidas Estándar",
                    "Compromiso Inmunologico / Metabolico Critico",
                    exp,
-                   "1) Aislar preventivamente al tripulante y tomar saliva/sangre seriada. 2) Estabilizar glucemia. 3) Auditar filtros HEPA y cultivo Veggie.");
+                   "1) Quédate en cabina aparte para no contagiar al resto y guarda muestras de saliva. 2) Estabiliza el azúcar en sangre (comida o hidratación según corresponda). 3) Revisa filtros de aire HEPA y plantas del cultivo Veggie.");
     } else if (fever_caut || immune_flags != 0 || glucose_out) {
         char exp[192];
         snprintf(exp, sizeof(exp),
@@ -476,7 +476,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Biomarcadores Inmunes / Microbioma / Medidas Estándar",
                    "Alerta de Inmunidad / Microbioma / Glucemia",
                    exp,
-                   "1) Reducir contacto cercano y tomar muestra de saliva seca. 2) Estabilizar glucemia. 3) Revisar higiene y ventilacion de cabina.");
+                   "1) Mantén distancia preventiva con el equipo y toma una muestra de saliva para control. 2) Ajusta comida o hidratación para normalizar la glucosa. 3) Revisa limpieza de superficies y ventilación.");
     }
 
     /* =====================================================================
@@ -495,7 +495,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "ARCHeR / Privación de Sueño",
                    "Fatiga Cognitiva Critica y Deuda de Sueno",
                    exp,
-                   "1) Suspender maniobras criticas (No apto). 2) Proteger bloque de 8 h de sueno y luz LED circadiana. 3) Aplicar soporte conductual.");
+                   "1) No hagas tareas delicadas ni caminatas EVA (descanso obligatorio). 2) Asegura un bloque continuo de 8 horas de sueño usando luces cálidas antes de dormir. 3) Pide apoyo del equipo para bajar tu carga.");
     } else if (sueno_3d < 6.0f &&
                (s->cognitivo_ms > b->cognitivo_base_ms * 1.15f || s->estres >= 7 || s->animo <= 4)) {
         char exp[192];
@@ -510,7 +510,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "ARCHeR / Privación de Sueño",
                    "Deuda de Sueno y Fatiga Conductual (ARCHeR)",
                    exp,
-                   "1) Ajustar iluminacion LED circadiana. 2) Descargar tareas no criticas. 3) Asignar pausa activa / cuidado del cultivo Veggie.");
+                   "1) Regula las luces LED del módulo para ayudar a tu reloj biológico. 2) Pasa tareas secundarias a otro día y descansa más hoy. 3) Haz una pausa breve o cuida las plantas del módulo Veggie para despejar la mente.");
     }
 
     if (s->cohesion_equipo <= 2) {
@@ -526,7 +526,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Riesgo de Cohesión de Equipo / HFBP",
                    "Friccion o Baja Cohesion de Equipo",
                    exp,
-                   "1) Convocar briefing breve de coordinacion. 2) Redistribuir carga operativa. 3) Programar actividad compartida de distension.");
+                   "1) Hagan una charla corta y tranquila para repartir mejor las tareas del día. 2) Bajen la presión en tareas no urgentes. 3) Compartan una comida o actividad grupal distendida para aliviar tensiones.");
     }
 
     if ((b->calorias_objetivo_kcal > 0 && cal_7d < 0.80f * (float)b->calorias_objetivo_kcal) ||
@@ -543,7 +543,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                    "Dieta Enriquecida / Apetito Nutricional",
                    "Deficit Calórico / Fatiga de Menu Espacial",
                    exp,
-                   "1) Rotar a dieta enriquecida (omega-3/flavonoides). 2) Sumar porcion fresca del modulo Veggie. 3) Reforzar hidratacion diaria.");
+                   "1) Cambia a comidas del menú enriquecido (más sabor, omega-3 y antioxidantes) para recuperar el apetito. 2) Agrega vegetales frescos del cultivo Veggie. 3) Toma agua en sorbos repartidos durante el día.");
     }
 
     /* =====================================================================
@@ -566,7 +566,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                        "Medidas Estándar / Adaptaciones Cardiovasculares / EVA",
                        "Menorragia / Dismenorrea Severa y Riesgo de Anemia",
                        exp,
-                       "1) Suspender EVA (No apto). 2) Administrar hierro terapeutico + Complejo B. 3) Reponer fluidos/electrolitos y controlar ferritina.");
+                       "1) Suspende cualquier caminata EVA hoy por riesgo de mareo o bajada de presión. 2) Toma suplemento de Hierro + Complejo B para reponer glóbulos rojos. 3) Bebe líquido con electrolitos y descansa.");
         } else if ((s->fase_ciclo == CYCLE_MENSTRUAL || s->flujo_menstrual >= 1 || s->colico_menstrual >= 4) &&
                    (s->suplemento_hierro == 0 || s->flujo_menstrual >= 2 || s->colico_menstrual >= 4 || low_hydration)) {
             char exp[192];
@@ -582,7 +582,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                        "Medidas Estándar / Complejo B / Dieta Enriquecida",
                        "Monitoreo Menstrual: Prevencion de Ferropenia y Dismenorrea",
                        exp,
-                       "1) Activar Hierro + Complejo B con comida (sin cafe/te 1 h). 2) Sumar +350 ml de hidratacion. 3) Reevaluar flujo en proximo check-in.");
+                       "1) Toma Hierro + Complejo B junto a una comida y evita café o té durante 1 hora para absorberlo mejor. 2) Suma unos 350 ml extra de agua. 3) Revisa cómo sigue el flujo en tu próximo control.");
         }
 
         if (s->fase_ciclo == CYCLE_LUTEAL &&
@@ -602,7 +602,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                        "Medidas Estándar / ARCHeR / Complejo B",
                        "Ajuste Hormonal Fase Lutea (Termorregulacion y Sueno)",
                        exp,
-                       "1) Ajustar ventilacion/termorregulacion por alza lutea (+0.3-0.5 C). 2) Reforzar Complejo B y luz circadiana. 3) Descartar pCO2 elevado.");
+                       "1) Baja un poco la temperatura de tu litera (en fase lútea el cuerpo sube ~0.3–0.5 °C de forma normal, no es fiebre). 2) Refuerza Complejo B y luz suave al acostarte. 3) Chequea el CO2 si persiste dolor de cabeza.");
         }
 
         if (s->fase_ciclo == CYCLE_SUPPRESSED &&
@@ -622,7 +622,7 @@ void evaluate_astronaut(Astronaut *a, const CabinEnv *env_in) {
                        "Hemostasia Venosa / ARED / Protocolo Zero-T2",
                        "Supresion Hormonal: Vigilancia de Hemostasia Venosa y Osea",
                        exp,
-                       "1) Mantener hidratación >= 100% para mitigar riesgo VTE (mayor con COC estrogénicos). 2) Controlar flujo yugular (Tempus Pro). 3) Cumplir ARED / Zero-T2 + Vitamina D3.");
+                       "1) Toma agua hasta cubrir el 100% de tu meta diaria para mantener la sangre fluida y evitar coágulos venosos. 2) Controla el flujo del cuello con Tempus Pro. 3) Cumple tu rutina ARED/Zero-T2 y toma Vitamina D3.");
         }
     }
 

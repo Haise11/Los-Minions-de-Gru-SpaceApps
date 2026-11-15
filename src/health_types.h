@@ -184,8 +184,8 @@ typedef struct {
     AlertSeverity severity;
     char          referencia_nasa[64];
     char          titulo[64];
-    char          explicacion[192];
-    char          contramedida[256];
+    char          explicacion[256];
+    char          contramedida[384];
 } HealthAlert;
 
 typedef struct {
