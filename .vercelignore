@@ -1,0 +1,12 @@
+space_health_server
+test_engine
+*.o
+src/
+third_party/
+tests/
+Documentacion/
+Makefile
+main.c
+__pycache__/
+*.pyc
+.git/
